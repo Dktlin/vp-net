@@ -873,9 +873,7 @@
     }
 
     function formatMessageContent(str) {
-      const escaped = escapeHtml(str);
-      return escaped.replace(/\*([^\*
-]+)\*/g, '<span class="rp-action">*\$1*</span>');
+      return escapeHtml(str);
     }
 
     function renderChat() {
@@ -1705,7 +1703,12 @@ ${sliceToSummarize}`;
     });
 
     function handleKey(e) {
-      if (e.key === "Enter" && !e.shiftKey) {
+      if (e.key === "Enter") {
+        if (e.shiftKey) {
+          // Shift+Enter creates a new line
+          return;
+        }
+        // Enter sends message
         e.preventDefault();
         sendMessage();
       }
