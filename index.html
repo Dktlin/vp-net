@@ -8,8 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="VP-NET" />
   <meta name="theme-color" content="#080a0e" />
   <link rel="manifest" href="./manifest.json" />
-  <title>VP-NET // Канал: Амир</title>
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=_gFUmckYrBLxVMVItIFA9k4Yxv53m-DRGfcLtzoBYRPcH_Wm3iZ2ejw9UQQLOdj6bHLGqqnrvCV54wJSQ8Br0P6vf3qWIKczvSO2c58KcghnnCIHqKSbi1pwCGkPNM0F1uAzQZM6euQgOvgZPPt7wRnblN6zMSY9CuziCVZ9Y2G5Uls507SdY5UYmCgJu-Pod2n8kcxmGSBYYUc0xdm_gfgeV78QZ_yTbawxvWZHpAEZVGmHLqxWIe8duwvyEfx9sxQr4P-Dc32YODT7JAczYPPdMvcedzLUGwYGgHc73bZQg8nsbboRcdVOz1ivmqXC" charset="UTF-8"></script><style>
+  <title>VP-NET // Канал: Амир</title><style>
     :root {
       --bg: #080a0e;
       --panel: #0f131b;
@@ -74,11 +73,346 @@
     .msg.sensor-alert { border-color: var(--warn) !important; background: #1a150e !important; color: #fcd34d; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
     .time { font-size: 10px; color: var(--muted); margin-top: 3px; text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
-    .msg-actions { display: none; gap: 6px; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .msg-wrap.selected .msg-actions { display: flex; }
-    .msg-wrap.ian .msg-actions { justify-content: flex-end; }
     .mini-btn { background: #161e2b; border: 1px solid var(--border); color: #94a3b8; font-size: 10px; padding: 3px 7px; border-radius: 5px; cursor: pointer; font-weight: 600; }
     .mini-btn:active { background: #263244; color: var(--text); }
+
+    .msg-bubble-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+    }
+    .msg-wrap.ian .msg-bubble-row {
+      flex-direction: row-reverse;
+    }
+    .msg-menu-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 3px 6px;
+      font-size: 14px;
+      line-height: 1;
+      border-radius: 6px;
+      opacity: 0.3;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+      user-select: none;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+    .msg-wrap:hover .msg-menu-btn,
+    .msg-menu-btn:focus,
+    .msg-menu-btn.active {
+      opacity: 1;
+      color: var(--accent);
+      background: rgba(255, 255, 255, 0.08);
+    }
+    @media (hover: none) {
+      .msg-menu-btn {
+        opacity: 0.6;
+      }
+    }
+    /* NARRATIVE TAGS (События между СМС) */
+    .narrative-tag {
+      align-self: center;
+      font-size: 12px;
+      color: #a5b4fc;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px dashed rgba(165, 180, 252, 0.3);
+      padding: 6px 14px;
+      border-radius: 8px;
+      margin: 6px 0;
+      text-align: center;
+      font-style: italic;
+      max-width: 82%;
+      line-height: 1.4;
+      position: relative;
+      animation: fadeIn 0.18s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .narrative-del-btn {
+      background: transparent;
+      border: none;
+      color: #6366f1;
+      cursor: pointer;
+      font-size: 11px;
+      opacity: 0.5;
+      padding: 0 2px;
+    }
+    .narrative-del-btn:hover {
+      opacity: 1;
+      color: #f87171;
+    }
+
+    /* PIN BADGE */
+    .pin-badge {
+      font-size: 9px;
+      color: #f59e0b;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 4px;
+      padding: 1px 4px;
+      margin-left: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      display: inline-block;
+    }
+
+    /* SUGGESTION BAR (Кубик 🎲) */
+    .suggestion-bar {
+      background: #0b0f16;
+      border-top: 1px solid var(--border);
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      animation: fadeIn 0.18s ease;
+    }
+    .sugg-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: var(--accent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+    }
+    .sugg-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px 5px;
+    }
+    .sugg-close-btn:hover {
+      color: var(--text);
+    }
+    .sugg-chips {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sugg-chip {
+      background: #141b26;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 12.5px;
+      cursor: pointer;
+      white-space: nowrap;
+      text-align: left;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      line-height: 1.3;
+    }
+    .sugg-chip:hover {
+      background: #1e293b;
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    /* SWIPES (JANITOR AI STYLE) */
+    .msg-swipes {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      background: #0b0f16;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1px 3px;
+      user-select: none;
+      opacity: 0.35;
+      transition: opacity 0.15s ease, border-color 0.15s ease;
+      flex-shrink: 0;
+      height: 24px;
+    }
+    .msg-wrap:hover .msg-swipes,
+    .msg-swipes:focus-within,
+    .msg-swipes.active {
+      opacity: 1;
+      border-color: #2b394e;
+    }
+    @media (hover: none) {
+      .msg-swipes {
+        opacity: 0.75;
+      }
+    }
+    .swipe-btn {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 0 4px;
+      border-radius: 3px;
+      line-height: 1;
+      transition: all 0.12s ease;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .swipe-btn:hover:not(:disabled) {
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent);
+    }
+    .swipe-btn:disabled {
+      opacity: 0.2;
+      cursor: not-allowed;
+    }
+    .swipe-counter {
+      font-size: 9.5px;
+      color: #94a3b8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      padding: 0 3px;
+      letter-spacing: 0.3px;
+    }
+
+    /* INLINE EDIT MODE (JANITOR AI CHECKMARK / CROSS / REGEN) */
+    .msg.editing {
+      width: 100%;
+      min-width: 260px;
+      max-width: 100%;
+      background: #0c111a !important;
+      border: 1px solid var(--accent) !important;
+      padding: 10px;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+      cursor: default;
+    }
+    .inline-edit-area {
+      width: 100%;
+      background: #06080c;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14.5px;
+      line-height: 1.42;
+      padding: 8px 10px;
+      resize: vertical;
+      min-height: 65px;
+      max-height: 250px;
+      outline: none;
+      font-family: inherit;
+    }
+    .inline-edit-area:focus {
+      border-color: var(--accent);
+    }
+    .inline-edit-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .inline-act-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 5px 11px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    .inline-act-btn.cancel {
+      background: #18202c;
+      color: #94a3b8;
+      border: 1px solid var(--border);
+    }
+    .inline-act-btn.cancel:hover {
+      background: #222d3e;
+      color: var(--text);
+    }
+    .inline-act-btn.regen {
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+    .inline-act-btn.regen:hover {
+      background: rgba(56, 189, 248, 0.22);
+    }
+    .inline-act-btn.save {
+      background: var(--accent);
+      color: #080a0e;
+    }
+    .inline-act-btn.save:hover {
+      opacity: 0.9;
+    }
+
+    /* ROLEPLAY ACTIONS ITALIC */
+    .rp-action {
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    .msg-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      z-index: 50;
+      background: #0d121a;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 160px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
+      animation: fadeIn 0.15s ease;
+    }
+    .msg-wrap.ian .msg-dropdown {
+      right: 0;
+    }
+    .msg-wrap.aamir .msg-dropdown {
+      left: 0;
+    }
+    .dropdown-item {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 12.5px;
+      font-family: inherit;
+      text-align: left;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      transition: background 0.12s, color 0.12s;
+    }
+    .dropdown-item:hover, .dropdown-item:active {
+      background: #1b2434;
+      color: var(--accent);
+    }
+    .dropdown-item.danger {
+      color: #f87171;
+    }
+    .dropdown-item.danger:hover, .dropdown-item.danger:active {
+      background: #3b1111;
+      color: #fca5a5;
+    }
 
     .regen-bar { align-self: flex-start; margin-top: 2px; }
     .system-tag { align-self: center; font-size: 10px; color: var(--muted); background: #0f141d; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); margin: 4px 0; text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -133,6 +467,7 @@
       <div class="header-btns">
         <button class="icon-btn" id="sensorBtn" onclick="triggerSensorPing()" title="Отправить сигнал с датчиков Яна">SENS</button>
         <button class="icon-btn" id="proactiveBtn" onclick="triggerProactive(false)" title="Запросить входящее СМС от Амира">SMS</button>
+        <button class="icon-btn" id="noteBtn" onclick="openAuthorNoteModal()" title="Заметка сценариста (вброс ситуации)">NOTE</button>
         <button class="icon-btn" onclick="openLorebook()" title="Книга мира и триггеры">LORE</button>
         <button class="icon-btn" onclick="openSettings()" title="Настройки канала и памяти">CFG</button>
       </div>
@@ -145,13 +480,24 @@
       </div>
       <div class="tele-row">
         <span id="stateDisplay">STATE // Не спал 24ч • Пульс в норме</span>
+        <span id="contextDisplay" style="color: var(--accent); font-weight: 600;">CTX // 0/35</span>
       </div>
     </div>
 
     <div class="chat" id="chatBox"></div>
 
+    <!-- ПАНЕЛЬ ПОДСКАЗОК РЕПЛИК ДЛЯ ЯНА (Кубик 🎲) -->
+    <div id="suggestionBar" class="suggestion-bar" style="display:none;">
+      <div class="sugg-header">
+        <span>🎲 ИДЕИ ОТВЕТА ДЛЯ ЯНА:</span>
+        <button class="sugg-close-btn" onclick="closeSuggestions()">✕</button>
+      </div>
+      <div id="suggestionChips" class="sugg-chips"></div>
+    </div>
+
     <div class="input-area">
-      <textarea id="msgInput" rows="1" placeholder="Сообщение..." oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+      <textarea id="msgInput" rows="1" placeholder="Сообщение... (*действие* для заметки в чат)" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+      <button class="icon-btn" id="diceBtn" onclick="requestSuggestions()" title="Кубик: предложить 3 варианта ответа для Яна" style="height:42px; padding:0 10px; font-size:16px;">🎲</button>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND</button>
     </div>
   </div>
@@ -171,6 +517,30 @@
       <div class="modal-actions">
         <button class="btn-sec" onclick="closeModal('quickStatusModal')">Отмена</button>
         <button class="send-btn" onclick="saveQuickStatus()">APPLY</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: ЗАМЕТКА СЦЕНАРИСТА (AUTHORS NOTE) -->
+  <div class="modal" id="authorNoteModal">
+    <div class="modal-box">
+      <h3>VP-NET // Заметка сценариста</h3>
+      <span class="hint">Введи подсказку или событие, чтобы направить сюжет (например: «Амир видит на камерах, что Ян ранен» или «Амир шутит над ним»).</span>
+      
+      <div class="field">
+        <label>Тайная инструкция для Амира</label>
+        <textarea id="authorNoteInput" placeholder="Опиши обстановку или желаемую реакцию Амира..."></textarea>
+      </div>
+      
+      <div class="field" style="flex-direction:row; align-items:center; gap:8px;">
+        <input type="checkbox" id="authorNoteOnceCheck" checked />
+        <label for="authorNoteOnceCheck" style="margin:0; cursor:pointer;">Применить только на следующий ответ (одноразово)</label>
+      </div>
+
+      <div class="row-btns" style="margin-top:6px;">
+        <button class="btn-sec" onclick="sendNarrativeEventFromModal()" title="Отобразить в чате как событие между СМС">В чат как событие</button>
+        <button class="btn-sec" onclick="closeModal('authorNoteModal')" style="margin-left:auto;">Отмена</button>
+        <button class="send-btn" onclick="saveAuthorNote()">APPLY</button>
       </div>
     </div>
   </div>
@@ -208,8 +578,13 @@
       <div class="section-label">01. Отношения и долгая память</div>
 
       <div class="field">
-        <label>Ручная память (отношения, ключевые события, границы)</label>
-        <textarea id="memoryInput" placeholder="Вписывай сюда важные этапы отношений, которые Амир должен помнить всегда."></textarea>
+        <label>Ручная память (предыстория, этапы отношений, границы)</label>
+        <textarea id="memoryInput" placeholder="Вписывай сюда важные этапы отношений, факты прошлого и границы, которые Амир должен помнить всегда."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Вектор сюжета и будущие события (к чему стремится история)</label>
+        <textarea id="storyGoalInput" placeholder="Опиши запланированные будущие события или вектор отношений (например: «Медленный слоуберн. Впереди совместная опасная миссия / Ян получит ранение, Амир будет вытаскивать его»)."></textarea>
       </div>
 
       <div class="field">
@@ -269,6 +644,8 @@
         <label>Быстрый выбор модели (Пресеты)</label>
         <select id="modelPresetSelect" onchange="applyModelPreset()">
           <option value="">-- Выбрать пресет --</option>
+          <option value="gemini|gemini-2.5-flash">Google Gemini: 2.5 Flash (AI Studio, быстрая)</option>
+          <option value="gemini|gemini-2.0-flash">Google Gemini: 2.0 Flash (AI Studio)</option>
           <option value="openrouter|deepseek/deepseek-chat-v3-0324:free">OpenRouter: DeepSeek V3 (Бесплатная)</option>
           <option value="openrouter|deepseek/deepseek-r1:free">OpenRouter: DeepSeek R1 (Бесплатная)</option>
           <option value="openrouter|google/gemini-2.0-flash-exp:free">OpenRouter: Gemini 2.0 Flash (Бесплатная)</option>
@@ -289,7 +666,8 @@
 
       <div class="field">
         <label>API Key (хранится только локально)</label>
-        <input type="password" id="apiKeyInput" placeholder="sk-..." />
+        <input type="password" id="apiKeyInput" placeholder="sk-... или AIzaSy..." />
+        <span class="hint">Вставьте ваш ключ: OpenRouter (sk-or-v1-...), DeepSeek (sk-...) или Google AI Studio (AIzaSy...).</span>
       </div>
 
       <div class="field">
@@ -310,13 +688,14 @@
         <button class="btn-sec" onclick="subscribePush()">Подключить Push-уведомления</button>
       </div>
 
-      <div class="section-label">04. Резервное копирование</div>
+      <div class="section-label">04. Резервное копирование и управление главами</div>
 
       <div class="field">
         <div class="row-btns">
-          <button class="btn-sec" onclick="exportChat()">Экспорт JSON</button>
-          <button class="btn-sec" onclick="document.getElementById('importFile').click()">Импорт JSON</button>
+          <button class="btn-sec" onclick="exportChat()">💾 Экспорт JSON</button>
+          <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Импорт JSON</button>
           <input type="file" id="importFile" accept=".json" style="display:none" onchange="importChat(event)" />
+          <button class="btn-sec" style="background:#1e1b4b; color:#a5b4fc; border-color:#4338ca;" onclick="archiveAndStartNewChat()" title="Автоматически скачает бэкап текущего чата в JSON и начнёт новую главу">📦 Сохранить и начать новый чат</button>
         </div>
       </div>
 
@@ -344,7 +723,7 @@
 
 ЖЁСТКИЕ ПРАВИЛА ФОРМАТА:
 1. Пиши ИСКЛЮЧИТЕЛЬНО на живом разговорном русском языке.
-2. НИКАКИХ звёздочек (*), описаний действий или художественного текста от третьего лица. НИКАКИХ смайликов и эмодзи. Только живой текст СМС.
+2. НИКАКИХ звёздочек (*), никаких описаний действий или художественного текста от третьего лица. НИКАКИХ смайликов и эмодзи. Ты отправляешь ТОЛЬКО чистый текст СМС-сообщений. Передавай любые действия только словами в диалоге (например: «Я на камерах вижу твой медблок», а не «*смотрит на монитор*»).
 3. Разбивай ответ на несколько коротких отдельных сообщений (пузырьков), разделяя их строго символом |||`;
 
     const DEFAULT_LOREBOOK = [
@@ -411,9 +790,12 @@
       location: "База Протокола • Медблок",
       yanState: "Не спал 24ч • Пульс повышен",
       memory: "Начальный этап. Ян держит дистанцию, легко срывается в агрессию при смущении, но начинает привыкать, что Амир всегда приглядывает за ним.",
+      storyGoal: "Медленный слоуберн: невысказанная взаимная привязанность. Амир бережно опекает Яна, не торопит события и следит за его безопасностью.",
       autoSummary: "",
       lastSummarizedCount: 0,
       lorebook: DEFAULT_LOREBOOK,
+      authorNote: "",
+      authorNoteOnce: true,
       replyLength: "medium",
       temperature: 0.9,
       maxTokens: 700,
@@ -432,7 +814,8 @@
     let lastActivity = parseInt(localStorage.getItem("vp_last_activity") || String(Date.now()), 10);
     let isGenerating = false;
     let timerId = null;
-    let selectedMsgIndex = null;
+    let activeMenuIndex = null;
+    let editingMsgIndex = null;
 
     async function initApp() {
       if (!history) {
@@ -462,6 +845,7 @@
     function saveHistory() {
       localStorage.setItem("vp_chat_history", JSON.stringify(history));
       saveToIndexedDB("history", history);
+      updateTelemetryBar();
       lastActivity = Date.now();
       localStorage.setItem("vp_last_activity", String(lastActivity));
     }
@@ -474,11 +858,24 @@
     function updateTelemetryBar() {
       document.getElementById("locationDisplay").textContent = `LOC // ${config.location || "Не задано"}`;
       document.getElementById("stateDisplay").textContent = `STATE // ${config.yanState || "Стандартные показатели"}`;
+      const ctxLimit = Number(config.contextSize) || 35;
+      const total = history ? history.length : 0;
+      const pinnedCount = history ? history.filter(m => m.pinned).length : 0;
+      const ctxEl = document.getElementById("contextDisplay");
+      if (ctxEl) {
+        ctxEl.textContent = `CTX // ${Math.min(total, ctxLimit)}/${ctxLimit}${pinnedCount > 0 ? ` (📌 ${pinnedCount})` : ''}`;
+      }
     }
 
     function autoResize(el) {
       el.style.height = "42px";
       el.style.height = Math.min(el.scrollHeight, 120) + "px";
+    }
+
+    function formatMessageContent(str) {
+      const escaped = escapeHtml(str);
+      return escaped.replace(/\*([^\*
+]+)\*/g, '<span class="rp-action">*\$1*</span>');
     }
 
     function renderChat() {
@@ -496,33 +893,180 @@
         }
 
         const wrap = document.createElement("div");
-        wrap.className = "msg-wrap " + (m.role === "user" ? "ian" : "aamir") + (selectedMsgIndex === idx ? " selected" : "");
+        wrap.className = "msg-wrap " + (m.role === "user" ? "ian" : "aamir");
 
+        const row = document.createElement("div");
+        row.className = "msg-bubble-row";
+
+        // РЕЖИМ РЕДАКТИРОВАНИЯ (Галочка, Крестик, Перегенерить)
+        if (editingMsgIndex === idx) {
+          const editDiv = document.createElement("div");
+          editDiv.className = "msg editing" + (m.isSensor ? " sensor-alert" : "");
+
+          const ta = document.createElement("textarea");
+          ta.id = "inlineEdit_" + idx;
+          ta.className = "inline-edit-area";
+          ta.value = m.content;
+          ta.oninput = () => autoResize(ta);
+          ta.onkeydown = (e) => handleInlineEditKey(e, idx);
+
+          const acts = document.createElement("div");
+          acts.className = "inline-edit-actions";
+
+          const cancelBtn = document.createElement("button");
+          cancelBtn.className = "inline-act-btn cancel";
+          cancelBtn.innerHTML = "✕ Отмена";
+          cancelBtn.title = "Отменить редактирование (Esc)";
+          cancelBtn.onclick = () => cancelInlineEdit();
+          acts.appendChild(cancelBtn);
+
+          if (m.role === "assistant" && !m.isSensor) {
+            const regenBtn = document.createElement("button");
+            regenBtn.className = "inline-act-btn regen";
+            regenBtn.innerHTML = "🔄 Заново";
+            regenBtn.title = "Сгенерировать другой вариант этого сообщения";
+            regenBtn.onclick = () => regenInlineEdit(idx);
+            acts.appendChild(regenBtn);
+          }
+
+          const saveBtn = document.createElement("button");
+          saveBtn.className = "inline-act-btn save";
+          saveBtn.innerHTML = "✓ Сохранить";
+          saveBtn.title = "Сохранить изменения (Ctrl+Enter)";
+          saveBtn.onclick = () => saveInlineEdit(idx);
+          acts.appendChild(saveBtn);
+
+          editDiv.appendChild(ta);
+          editDiv.appendChild(acts);
+          row.appendChild(editDiv);
+          wrap.appendChild(row);
+          box.appendChild(wrap);
+          return;
+        }
+
+        // СОБЫТИЕ МЕЖДУ СМС (NARRATIVE TAG)
+        if (m.isNarrative) {
+          const narDiv = document.createElement("div");
+          narDiv.className = "narrative-tag";
+          narDiv.innerHTML = `<span>✦ ${escapeHtml(m.content)}</span><button class="narrative-del-btn" onclick="deleteMessage(${idx})" title="Удалить">✕</button>`;
+          box.appendChild(narDiv);
+          return;
+        }
+
+        // ОБЫЧНОЕ ОТОБРАЖЕНИЕ СООБЩЕНИЯ
         const div = document.createElement("div");
         div.className = "msg" + (m.isSensor ? " sensor-alert" : "");
-        div.innerHTML = `${escapeHtml(m.content)}<div class="time">${m.time || ""}</div>`;
-        div.onclick = (e) => {
+        const pinBadgeHtml = m.pinned ? '<span class="pin-badge">📌 ПАМЯТЬ</span>' : '';
+        div.innerHTML = `${formatMessageContent(m.content)}<div class="time">${pinBadgeHtml} ${m.time || ""}</div>`;
+        row.appendChild(div);
+
+        // ВАРИАНТЫ (SWIPES В СТИЛЕ JANITOR AI: ‹ 1/2 ›)
+        if (m.role === "assistant" && !m.isSensor) {
+          if (!m.variants || !Array.isArray(m.variants)) {
+            m.variants = [m.content];
+            m.variantIndex = 0;
+          }
+
+          const swipes = document.createElement("div");
+          swipes.className = "msg-swipes";
+
+          const prevBtn = document.createElement("button");
+          prevBtn.className = "swipe-btn";
+          prevBtn.innerHTML = "‹";
+          prevBtn.title = "Предыдущий сохранённый вариант";
+          prevBtn.disabled = m.variantIndex <= 0;
+          prevBtn.onclick = (e) => {
+            e.stopPropagation();
+            prevVariant(idx);
+          };
+
+          const counter = document.createElement("span");
+          counter.className = "swipe-counter";
+          counter.textContent = `${(m.variantIndex || 0) + 1}/${m.variants.length}`;
+
+          const nextBtn = document.createElement("button");
+          nextBtn.className = "swipe-btn";
+          nextBtn.innerHTML = "›";
+          nextBtn.title = m.variantIndex < m.variants.length - 1 ? "Следующий вариант" : "Сгенерировать альтернативный вариант (+1)";
+          nextBtn.onclick = (e) => {
+            e.stopPropagation();
+            nextVariant(idx);
+          };
+
+          swipes.appendChild(prevBtn);
+          swipes.appendChild(counter);
+          swipes.appendChild(nextBtn);
+          row.appendChild(swipes);
+        }
+
+        // КНОПКА ТРЁХ ТОЧЕК (МЕНЮ)
+        const menuBtn = document.createElement("button");
+        menuBtn.className = "msg-menu-btn" + (activeMenuIndex === idx ? " active" : "");
+        menuBtn.title = "Действия";
+        menuBtn.innerHTML = "•••";
+        menuBtn.onclick = (e) => {
           e.stopPropagation();
-          selectedMsgIndex = selectedMsgIndex === idx ? null : idx;
+          activeMenuIndex = activeMenuIndex === idx ? null : idx;
           renderChat();
         };
 
-        const actions = document.createElement("div");
-        actions.className = "msg-actions";
-        actions.innerHTML = `
-          <button class="mini-btn" onclick="editMessage(${idx})">EDIT</button>
-          <button class="mini-btn" onclick="deleteMessage(${idx})">DEL</button>
-        `;
+        row.appendChild(menuBtn);
 
-        wrap.appendChild(div);
-        wrap.appendChild(actions);
+        // ВЫПАДАЮЩЕЕ МЕНЮ
+        if (activeMenuIndex === idx) {
+          const dropdown = document.createElement("div");
+          dropdown.className = "msg-dropdown";
+          dropdown.onclick = (e) => e.stopPropagation();
+
+          const editBtn = document.createElement("button");
+          editBtn.className = "dropdown-item";
+          editBtn.innerHTML = "<span>✏️</span> Редактировать";
+          editBtn.onclick = () => { activeMenuIndex = null; editMessage(idx); };
+          dropdown.appendChild(editBtn);
+
+          if (m.role === "assistant" && !m.isSensor) {
+            const newVarBtn = document.createElement("button");
+            newVarBtn.className = "dropdown-item";
+            newVarBtn.innerHTML = "<span>🔄</span> Новый вариант (+1)";
+            newVarBtn.onclick = () => { activeMenuIndex = null; nextVariant(idx); };
+            dropdown.appendChild(newVarBtn);
+          }
+
+          const pinBtn = document.createElement("button");
+          pinBtn.className = "dropdown-item";
+          pinBtn.innerHTML = `<span>📌</span> ${m.pinned ? "Открепить" : "Закрепить в памяти"}`;
+          pinBtn.onclick = () => { activeMenuIndex = null; togglePinMessage(idx); };
+          dropdown.appendChild(pinBtn);
+
+          const copyBtn = document.createElement("button");
+          copyBtn.className = "dropdown-item";
+          copyBtn.innerHTML = "<span>📋</span> Скопировать";
+          copyBtn.onclick = () => { activeMenuIndex = null; copyMessage(idx); };
+          dropdown.appendChild(copyBtn);
+
+          const delBtn = document.createElement("button");
+          delBtn.className = "dropdown-item danger";
+          delBtn.innerHTML = "<span>🗑️</span> Удалить";
+          delBtn.onclick = () => { activeMenuIndex = null; deleteMessage(idx); };
+          dropdown.appendChild(delBtn);
+
+          row.appendChild(dropdown);
+        }
+
+        wrap.appendChild(row);
         box.appendChild(wrap);
       });
 
+      // БАР ПЕРЕГЕНЕРАЦИИ И ПРОДОЛЖЕНИЯ
       if (history.length > 0 && history[history.length - 1].role === "assistant" && !isGenerating) {
         const regenDiv = document.createElement("div");
         regenDiv.className = "regen-bar";
-        regenDiv.innerHTML = `<button class="mini-btn" onclick="regenerateLast()">[ REGEN // ПЕРЕГЕНЕРИРОВАТЬ ОТВЕТ ]</button>`;
+        regenDiv.style.display = "flex";
+        regenDiv.style.gap = "6px";
+        regenDiv.innerHTML = `
+          <button class="mini-btn" onclick="regenerateLast()">[ REGEN // ПЕРЕГЕНЕРИРОВАТЬ ]</button>
+          <button class="mini-btn" onclick="continueLast()" style="color:var(--accent);">[ + MORE // ПРОДОЛЖИТЬ ]</button>
+        `;
         box.appendChild(regenDiv);
       }
 
@@ -530,30 +1074,287 @@
     }
 
     document.addEventListener("click", (e) => {
-      if (!e.target.closest(".msg-wrap") && selectedMsgIndex !== null) {
-        selectedMsgIndex = null;
+      if (activeMenuIndex !== null && !e.target.closest(".msg-dropdown") && !e.target.closest(".msg-menu-btn")) {
+        activeMenuIndex = null;
         renderChat();
       }
     });
 
+    function copyMessage(idx) {
+      const text = history[idx].content;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
+      showToast("СКОПИРОВАНО");
+    }
+
+    function fallbackCopy(text) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    function showToast(msg) {
+      const status = document.getElementById("statusText");
+      if (!status) return;
+      const prev = status.textContent;
+      status.textContent = msg;
+      setTimeout(() => {
+        if (status.textContent === msg) {
+          status.textContent = prev;
+        }
+      }, 1500);
+    }
+
     function editMessage(idx) {
-      const current = history[idx].content;
-      const updated = prompt("Редактировать текст сообщения:", current);
-      if (updated !== null && updated.trim() !== "") {
-        history[idx].content = updated.trim();
-        selectedMsgIndex = null;
+      editingMsgIndex = idx;
+      activeMenuIndex = null;
+      renderChat();
+      setTimeout(() => {
+        const ta = document.getElementById("inlineEdit_" + idx);
+        if (ta) {
+          ta.focus();
+          ta.selectionStart = ta.selectionEnd = ta.value.length;
+          autoResize(ta);
+        }
+      }, 40);
+    }
+
+    function saveInlineEdit(idx) {
+      const ta = document.getElementById("inlineEdit_" + idx);
+      if (!ta) return;
+      const val = ta.value.trim();
+      if (val) {
+        history[idx].content = val;
+        if (history[idx].variants && history[idx].variantIndex !== undefined) {
+          history[idx].variants[history[idx].variantIndex] = val;
+        }
+        saveHistory();
+        syncToWorker();
+      }
+      editingMsgIndex = null;
+      renderChat();
+    }
+
+    function cancelInlineEdit() {
+      editingMsgIndex = null;
+      renderChat();
+    }
+
+    async function regenInlineEdit(idx) {
+      editingMsgIndex = null;
+      renderChat();
+      await generateNewVariant(idx);
+    }
+
+    function handleInlineEditKey(e, idx) {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        saveInlineEdit(idx);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        cancelInlineEdit();
+      }
+    }
+
+    function deleteMessage(idx) {
+      if (confirm("Удалить это сообщение?")) {
+        history.splice(idx, 1);
         saveHistory();
         renderChat();
         syncToWorker();
       }
     }
 
-    function deleteMessage(idx) {
-      history.splice(idx, 1);
-      selectedMsgIndex = null;
+    function prevVariant(idx) {
+      if (isGenerating) return;
+      const m = history[idx];
+      if (!m || !m.variants || m.variantIndex <= 0) return;
+      m.variantIndex--;
+      m.content = m.variants[m.variantIndex];
       saveHistory();
       renderChat();
       syncToWorker();
+    }
+
+    async function nextVariant(idx) {
+      if (isGenerating) return;
+      const m = history[idx];
+      if (!m) return;
+      if (!m.variants) {
+        m.variants = [m.content];
+        m.variantIndex = 0;
+      }
+
+      // Если в памяти уже есть следующий вариант, просто переключаем на него!
+      if (m.variantIndex < m.variants.length - 1) {
+        m.variantIndex++;
+        m.content = m.variants[m.variantIndex];
+        saveHistory();
+        renderChat();
+        syncToWorker();
+        return;
+      }
+
+      // Иначе генерируем новый вариант через нейросеть (+1)
+      await generateNewVariant(idx);
+    }
+
+    async function generateNewVariant(idx) {
+      if (isGenerating) return;
+      const m = history[idx];
+      if (!m) return;
+      if (!m.variants) {
+        m.variants = [m.content];
+        m.variantIndex = 0;
+      }
+
+      isGenerating = true;
+      setBusyUI(true, "ГЕНЕРАЦИЯ ВАРИАНТА...");
+
+      const ctxLimit = Number(config.contextSize) || 35;
+      const prior = history.slice(0, idx);
+      const recent = prior.slice(-ctxLimit).map(item => ({ role: item.role, content: item.content }));
+
+      recent.push({
+        role: "user",
+        content: `[СИСТЕМНАЯ ЗАМЕТКА: Сгенерируй альтернативный вариант сообщения от лица Амира (вариант ${m.variants.length + 1}). Предыдущий вариант был: "${m.content}". Ответь 1-2 короткими СМС через |||, без смайликов и звёздочек, сохранив характер.]`
+      });
+
+      const reply = await callLLM(recent);
+      isGenerating = false;
+      setBusyUI(false);
+
+      if (reply) {
+        const cleanReply = reply.split("|||").map(s => s.trim()).filter(Boolean).join("\n");
+        m.variants.push(cleanReply || reply.trim());
+        m.variantIndex = m.variants.length - 1;
+        m.content = m.variants[m.variantIndex];
+        saveHistory();
+        renderChat();
+        playChime();
+        syncToWorker();
+      }
+    }
+
+    async function continueLast() {
+      if (isGenerating || history.length === 0) return;
+      isGenerating = true;
+      setBusyUI(true, "ПРОДОЛЖЕНИЕ...");
+
+      const ctxLimit = Number(config.contextSize) || 35;
+      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      recent.push({
+        role: "user",
+        content: "[СИСТЕМНАЯ ЗАМЕТКА: Продолжи мысль Амира. Напиши ещё 1-3 коротких СМС через |||, развивая разговор или добавляя новую мысль, без смайликов и звёздочек.]"
+      });
+
+      const reply = await callLLM(recent);
+      isGenerating = false;
+      setBusyUI(false);
+
+      if (reply) {
+        await deliverBubbles(reply);
+      }
+    }
+
+    function togglePinMessage(idx) {
+      if (!history[idx]) return;
+      history[idx].pinned = !history[idx].pinned;
+      saveHistory();
+      renderChat();
+      updateTelemetryBar();
+      syncToWorker();
+      showToast(history[idx].pinned ? "ЗАКРЕПЛЕНО В ПАМЯТИ" : "ОТКРЕПЛЕНО");
+    }
+
+    function openAuthorNoteModal() {
+      document.getElementById("authorNoteInput").value = config.authorNote || "";
+      document.getElementById("authorNoteOnceCheck").checked = config.authorNoteOnce !== false;
+      document.getElementById("authorNoteModal").classList.add("open");
+    }
+
+    function saveAuthorNote() {
+      config.authorNote = document.getElementById("authorNoteInput").value.trim();
+      config.authorNoteOnce = document.getElementById("authorNoteOnceCheck").checked;
+      saveConfigOnly();
+      closeModal("authorNoteModal");
+      showToast(config.authorNote ? "ЗАМЕТКА СЦЕНАРИЯ АКТИВНА" : "ЗАМЕТКА СБРОШЕНА");
+    }
+
+    function sendNarrativeEventFromModal() {
+      const text = document.getElementById("authorNoteInput").value.trim();
+      if (!text) return;
+      history.push({
+        role: "user",
+        content: text,
+        isNarrative: true,
+        time: getTime(),
+        date: getDateStr()
+      });
+      saveHistory();
+      renderChat();
+      closeModal("authorNoteModal");
+      triggerProactive(false);
+    }
+
+    async function requestSuggestions() {
+      if (isGenerating) return;
+      const diceBtn = document.getElementById("diceBtn");
+      if (diceBtn) diceBtn.disabled = true;
+      setBusyUI(true, "ПОДБОР ИДЕЙ...");
+
+      const ctxLimit = 10;
+      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      recent.push({
+        role: "user",
+        content: "[СИСТЕМНАЯ ЗАМЕТКА: Предложи ровно 3 коротких, реалистичных варианта ответа от лица Яна на последнее СМС Амира (с учётом характера Яна: один чуть дерзкий/огрызается, один честный/уставший, один лаконичный/смущённый). Формат: верни ТОЛЬКО 3 варианта, разделяя их знаком ###, без цифр, без звёздочек, без смайликов.]"
+      });
+
+      const reply = await callLLM(recent, null, 150);
+      setBusyUI(false);
+      if (diceBtn) diceBtn.disabled = false;
+
+      if (reply) {
+        const chips = reply.split("###").map(s => s.trim().replace(/^[\d\.\-\*\"\s]+|[\"\s]+$/g, '')).filter(Boolean).slice(0, 3);
+        if (chips.length > 0) {
+          showSuggestions(chips);
+        }
+      }
+    }
+
+    function showSuggestions(list) {
+      const bar = document.getElementById("suggestionBar");
+      const wrap = document.getElementById("suggestionChips");
+      wrap.innerHTML = "";
+      list.forEach(text => {
+        const chip = document.createElement("button");
+        chip.className = "sugg-chip";
+        chip.textContent = text;
+        chip.onclick = () => applySuggestion(text);
+        wrap.appendChild(chip);
+      });
+      bar.style.display = "flex";
+    }
+
+    function closeSuggestions() {
+      const bar = document.getElementById("suggestionBar");
+      if (bar) bar.style.display = "none";
+    }
+
+    function applySuggestion(text) {
+      const input = document.getElementById("msgInput");
+      input.value = text;
+      autoResize(input);
+      input.focus();
+      closeSuggestions();
     }
 
     async function regenerateLast() {
@@ -606,7 +1407,7 @@
 
     function getTriggeredLore() {
       if (!config.lorebook || !config.lorebook.length) return "";
-      const recentText = history.slice(-6).map(m => m.content.toLowerCase()).join(" ");
+      const recentText = history.slice(-6).map(m => m.content.toLowerCase()).join("\n");
       const matched = [];
       config.lorebook.forEach(entry => {
         const keywords = entry.keys.split(",").map(k => k.trim().toLowerCase()).filter(Boolean);
@@ -617,8 +1418,7 @@
       return matched.length ? `
 
 АКТИВНЫЕ ДАННЫЕ LOREBOOK (УЧИТЫВАЙ В ОТВЕТЕ):
-${matched.join("
-")}` : "";
+${matched.join("\n")}` : "";
     }
 
     function buildSystemPrompt() {
@@ -632,10 +1432,11 @@ ${getLengthInstruction()}
 - Состояние Яна по биометрическим датчикам: ${config.yanState || "Без отклонений"}`;
 
       if (config.memory && config.memory.trim()) {
-        prompt += `
+        prompt += `\n\nПОСТОЯННАЯ ПАМЯТЬ И ДИНАМИКА ОТНОШЕНИЙ:\n${config.memory.trim()}`;
+      }
 
-ПОСТОЯННАЯ ПАМЯТЬ И ДИНАМИКА ОТНОШЕНИЙ:
-${config.memory.trim()}`;
+      if (config.storyGoal && config.storyGoal.trim()) {
+        prompt += `\n\nВЕКТОР РАЗВИТИЯ СЮЖЕТА И БУДУЩИЕ СОБЫТИЯ (КУДА ДВИЖЕТСЯ ИСТОРИЯ):\n${config.storyGoal.trim()}`;
       }
       if (config.autoSummary && config.autoSummary.trim()) {
         prompt += `
@@ -643,6 +1444,19 @@ ${config.memory.trim()}`;
 ХРОНИКА ПРОШЛЫХ СОБЫТИЙ (ДОЛГОСРОЧНАЯ ПАМЯТЬ):
 ${config.autoSummary.trim()}`;
       }
+
+      // ЗАКРЕПЛЁННЫЕ ПАМЯТНЫЕ СООБЩЕНИЯ (PIN)
+      const pinned = (history || []).filter(m => m.pinned);
+      if (pinned.length > 0) {
+        prompt += `\n\nЗАКРЕПЛЁННЫЕ ВАЖНЫЕ МОМЕНТЫ (ПОМНИ ВСЕГДА НЕЗАВИСИМО ОТ ВРЕМЕНИ):\n` +
+          pinned.map(m => `- ${m.role === "user" ? "Ян" : "Амир"}: ${m.content}`).join("\n");
+      }
+
+      // ТЕКУЩАЯ ЗАМЕТКА СЦЕНАРИСТА (AUTHORS NOTE)
+      if (config.authorNote && config.authorNote.trim()) {
+        prompt += `\n\nТЕКУЩАЯ СЮЖЕТНАЯ ЗАМЕТКА / НАПРАВЛЕНИЕ ДЛЯ ОТВЕТА АМИРА:\n${config.authorNote.trim()}`;
+      }
+
       prompt += getTriggeredLore();
       return prompt;
     }
@@ -656,11 +1470,24 @@ ${config.autoSummary.trim()}`;
 
     async function callLLM(messagesPayload, customSystem = null, maxTok = null) {
       if (!config.apiKey) {
+        alert("Пожалуйста, введите ваш API ключ в настройках (CFG)!");
         openSettings();
         return null;
       }
 
       try {
+        const bodyPayload = {
+          model: config.model,
+          messages: [{ role: "system", content: customSystem || buildSystemPrompt() }, ...messagesPayload],
+          temperature: Number(config.temperature) || 0.9,
+          max_tokens: maxTok || Number(config.maxTokens) || 700
+        };
+
+        const penalty = (Number(config.repPenalty) || 1.08) - 1;
+        if (penalty > 0.01 && !config.apiUrl.includes("generativelanguage.googleapis.com")) {
+          bodyPayload.frequency_penalty = Math.min(2, Math.max(0, penalty));
+        }
+
         const res = await fetch(config.apiUrl, {
           method: "POST",
           headers: {
@@ -669,16 +1496,19 @@ ${config.autoSummary.trim()}`;
             "HTTP-Referer": window.location.href,
             "X-Title": "VP-NET Cypher Chat"
           },
-          body: JSON.stringify({
-            model: config.model,
-            messages: [{ role: "system", content: customSystem || buildSystemPrompt() }, ...messagesPayload],
-            temperature: Number(config.temperature) || 0.9,
-            max_tokens: maxTok || Number(config.maxTokens) || 700,
-            frequency_penalty: Math.max(0, (Number(config.repPenalty) || 1.08) - 1)
-          })
+          body: JSON.stringify(bodyPayload)
         });
+
         const data = await res.json();
-        if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+        if (!res.ok || data.error) {
+          const errDetail = data.error?.message || data.error || `${res.status} ${res.statusText}`;
+          throw new Error(typeof errDetail === "string" ? errDetail : JSON.stringify(errDetail));
+        }
+
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+          throw new Error("Не удалось получить ответ модели: " + JSON.stringify(data));
+        }
+
         return data.choices[0].message.content.trim();
       } catch (err) {
         if (!customSystem) alert("Ошибка API: " + err.message);
@@ -696,8 +1526,7 @@ ${config.autoSummary.trim()}`;
       if (btn) btn.textContent = "Сжатие...";
       status.textContent = "АРХИВАЦИЯ ПАМЯТИ...";
 
-      const sliceToSummarize = history.slice(-30).map(m => `${m.role === "user" ? "Ян" : "Амир"}: ${m.content}`).join("
-");
+      const sliceToSummarize = history.slice(-30).map(m => `${m.role === "user" ? "Ян" : "Амир"}: ${m.content}`).join("\n");
       const summaryPrompt = `Ты — модуль долгосрочной памяти ролевого чата. Обнови краткую хронику событий между Амиром (Cypher) и Яном.
 Правила:
 1. Сохрани важные факты из старой хроники.
@@ -736,9 +1565,11 @@ ${sliceToSummarize}`;
           status.textContent = "ПЕЧАТАЕТ...";
           await new Promise(r => setTimeout(r, 550 + Math.min(bubbles[i].length * 16, 1600)));
         }
+        // Очищаем реплику Сайфера от случайных звёздочек (чистый СМС текст)
+        const cleanBubble = bubbles[i].replace(/\*([^\*]*)\*/g, '$1').replace(/\*/g, '').trim();
         history.push({
           role: "assistant",
-          content: bubbles[i],
+          content: cleanBubble,
           time: getTime(),
           date: getDateStr()
         });
@@ -747,6 +1578,10 @@ ${sliceToSummarize}`;
         playChime();
       }
       status.textContent = "VP-NET // В СЕТИ";
+      if (config.authorNote && config.authorNoteOnce) {
+        config.authorNote = "";
+        saveConfigOnly();
+      }
       syncToWorker();
 
       if (history.length - (config.lastSummarizedCount || 0) >= 20) {
@@ -764,10 +1599,23 @@ ${sliceToSummarize}`;
 
       input.value = "";
       input.style.height = "42px";
-      history.push({ role: "user", content: text, time: getTime(), date: getDateStr() });
+
+      // Если введено действие в звёздочках (*...*) или скобках ([...]), отправляем как событие между СМС
+      const isNar = (text.startsWith("*") && text.endsWith("*")) || (text.startsWith("[") && text.endsWith("]"));
+      const cleanContent = isNar ? text.replace(/^[\*\[]+|[\*\]]+$/g, '').trim() : text;
+
+      history.push({
+        role: "user",
+        content: cleanContent,
+        isNarrative: isNar,
+        time: getTime(),
+        date: getDateStr()
+      });
+
       saveHistory();
       renderChat();
       resetAutoTimer();
+      closeSuggestions();
 
       const ctxLimit = Number(config.contextSize) || 35;
       const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
@@ -919,6 +1767,7 @@ ${sliceToSummarize}`;
 
     function openSettings() {
       document.getElementById("memoryInput").value = config.memory || "";
+      document.getElementById("storyGoalInput").value = config.storyGoal || "";
       document.getElementById("autoSummaryInput").value = config.autoSummary || "";
       document.getElementById("replyLengthSelect").value = config.replyLength || "medium";
 
@@ -952,10 +1801,15 @@ ${sliceToSummarize}`;
       if (!val) return;
       const [provider, modelName] = val.split("|");
       document.getElementById("modelInput").value = modelName;
-      if (provider === "openrouter") {
+      if (provider === "gemini") {
+        document.getElementById("apiUrlInput").value = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+        document.getElementById("apiKeyInput").placeholder = "AIzaSy... (ключ из Google AI Studio)";
+      } else if (provider === "openrouter") {
         document.getElementById("apiUrlInput").value = "https://openrouter.ai/api/v1/chat/completions";
+        document.getElementById("apiKeyInput").placeholder = "sk-or-v1-... (ключ OpenRouter)";
       } else if (provider === "deepseek") {
         document.getElementById("apiUrlInput").value = "https://api.deepseek.com/chat/completions";
+        document.getElementById("apiKeyInput").placeholder = "sk-... (ключ DeepSeek)";
       }
     }
 
@@ -963,6 +1817,7 @@ ${sliceToSummarize}`;
       config = {
         ...config,
         memory: document.getElementById("memoryInput").value.trim(),
+        storyGoal: document.getElementById("storyGoalInput").value.trim(),
         autoSummary: document.getElementById("autoSummaryInput").value.trim(),
         replyLength: document.getElementById("replyLengthSelect").value,
         temperature: parseFloat(document.getElementById("tempSlider").value),
@@ -1007,13 +1862,33 @@ ${sliceToSummarize}`;
             saveHistory();
             renderChat();
             syncToWorker();
+            closeModal("settingsModal");
             alert("История и память успешно восстановлены.");
+          } else {
+            alert("В выбранном файле не найдена история переписки.");
           }
         } catch (err) {
-          alert("Ошибка чтения файла резервной копии.");
+          alert("Ошибка чтения файла резервной копии: " + err.message);
         }
+        e.target.value = "";
       };
       reader.readAsText(file);
+    }
+
+    function archiveAndStartNewChat() {
+      if (!confirm("Автоматически сохранить текущую переписку в JSON на твоё устройство и начать новую главу с чистого листа?")) return;
+      exportChat();
+      const t = getTime();
+      history = INITIAL_GREETING.map(text => ({ role: "assistant", content: text, time: t, date: getDateStr() }));
+      config.autoSummary = "";
+      config.lastSummarizedCount = 0;
+      saveConfigOnly();
+      saveHistory();
+      renderChat();
+      updateTelemetryBar();
+      syncToWorker();
+      closeModal("settingsModal");
+      showToast("ЧАТ АРХИВИРОВАН В ФАЙЛ. НАЧАТ НОВЫЙ ДИАЛОГ!");
     }
 
     function clearHistory() {
