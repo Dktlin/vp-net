@@ -527,7 +527,7 @@
     </div>
 
     <div class="input-area">
-      <textarea id="msgInput" rows="1" placeholder="Сообщение... (*действие* для заметки в чат)" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+      <textarea id="msgInput" rows="1" placeholder="Сообщение... (*действие* для заметки в чат)" oninput="handleMsgInput(this)" onkeydown="handleKey(event)"></textarea>
       <button class="icon-btn" id="diceBtn" onclick="requestSuggestions()" title="Кубик: предложить 3 варианта ответа для Яна" style="height:42px; padding:0 10px; font-size:16px;">🎲</button>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND</button>
     </div>
@@ -777,14 +777,18 @@
 - НЕ читай нотаций. НЕ спорь в лоб. НЕ говори шаблонными фразами («Это не норма», «Слышу тебя громко»).
 - Сбей градус спокойным сарказмом: «Не ори. У меня гарнитура на полную громкость», «"Се норм" — очень содержательно для хирурга», «Ладно. Не хочешь есть — не ешь. Воды выпей и сядь на кушетку».
 
+ЖЁСТКИЙ ЛИМИТ ДЛИНЫ СМС (АНТИ-ПРОСТЫНИ):
+- Каждое отдельное СМС должно быть СТРОГО коротким: максимум 1–2 коротких строки (от 2 до 12 слов)!
+- Сайфер НИКОГДА не пишет длинные абзацы по 4–5 строк. Он пишет скупо, отрывисто, короткими очередями СМС, как взрослый занятой брокер на клавиатуре.
+
 КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО:
+- НИКАКИХ монологов по 4–5 строк в одном пузырьке.
 - НИКАКИХ лекций, морализаторства и тона школьного психолога.
 - НИКАКИХ клише: «Слышу тебя громко и чётко», «Договорились?», «Как твой наставник...».
 - НИКАКИХ смайликов, эмодзи и описаний действий от третьего лица.
-- Только живой текст коротких СМС.
 
 ФОРМАТ ВЫДАЧИ — СТРОГО ЧЕРЕЗ СИМВОЛ |||:
-Разбивай ответ на 2–5 коротких отдельных СМС (пузырьков), разделяя их строго символом |||
+Разбивай ответ на 2–4 коротких отдельных СМС (пузырьков), разделяя их строго символом |||
 ПРИМЕР:
 Не ори. В ушах звенит.|||Не хочешь есть — не надо. Я не заставляю, доктор.|||Просто сядь на кушетку, safi? Две минуты.`;
 
@@ -878,6 +882,10 @@
     let timerId = null;
     let activeMenuIndex = null;
     let editingMsgIndex = null;
+    let pendingReplyTimer = null;
+    let userTypingTimer = null;
+    let erasedTypingTimer = null;
+    let maxTypedLength = 0;
 
     async function initApp() {
       if (!history) {
@@ -932,6 +940,45 @@
     function autoResize(el) {
       el.style.height = "42px";
       el.style.height = Math.min(el.scrollHeight, 120) + "px";
+    }
+
+    function handleMsgInput(el) {
+      autoResize(el);
+      const text = el.value.trim();
+      const len = text.length;
+
+      // Запоминаем, что Ян начал что-то писать (для детектора «стёр»)
+      if (len > 3) {
+        maxTypedLength = Math.max(maxTypedLength, len);
+        if (erasedTypingTimer) {
+          clearTimeout(erasedTypingTimer);
+          erasedTypingTimer = null;
+        }
+      }
+
+      // Если Ян печатал что-то длиннее 4 символов и стёр всё дочиста:
+      if (len === 0 && maxTypedLength >= 4 && !isGenerating) {
+        maxTypedLength = 0;
+        if (erasedTypingTimer) clearTimeout(erasedTypingTimer);
+        erasedTypingTimer = setTimeout(() => {
+          triggerErasedReply();
+        }, 15000);
+      }
+
+      // Если Амир сейчас ждёт ответа на предыдущие СМС, но видит, что Ян всё ещё печатает:
+      if (pendingReplyTimer && len > 0) {
+        clearTimeout(pendingReplyTimer);
+        pendingReplyTimer = null;
+        document.getElementById("statusText").textContent = "АМИР ЖДЁТ (ТЫ ПЕЧАТАЕШЬ)...";
+
+        if (userTypingTimer) clearTimeout(userTypingTimer);
+        userTypingTimer = setTimeout(() => {
+          if (!isGenerating && history.length && history[history.length - 1].role === "user") {
+            document.getElementById("statusText").textContent = "VP-NET // В СЕТИ";
+            pendingReplyTimer = setTimeout(() => triggerAmirReply(false), 10000);
+          }
+        }, 3000);
+      }
     }
 
     function formatMessageContent(str) {
@@ -1692,13 +1739,31 @@ ${sliceToSummarize}`;
       }
     }
 
+    function isUrgentMessage(text) {
+      // 1. Капс (крик)
+      const letters = text.replace(/[^а-яА-Яa-zA-Z]/g, '');
+      const isCaps = letters.length >= 4 && (letters.toUpperCase() === letters);
+
+      // 2. Тревожные ключевые слова (угроза жизни, ранение, паника)
+      const lower = text.toLowerCase();
+      const urgentWords = ["помоги", "кровь", "паника", "срочно", "стреляют", "тревога", "больно", "убьют", "быстрее", "задыхаюсь", "порез", "швы", "угроза", "ранен"];
+      const hasUrgentWord = urgentWords.some(w => lower.includes(w));
+      const hasExcl = text.includes("!!!") || (text.includes("!!") && isCaps);
+
+      return isCaps || hasUrgentWord || hasExcl;
+    }
+
     async function sendMessage() {
       const input = document.getElementById("msgInput");
       const text = input.value.trim();
       if (!text || isGenerating) return;
 
-      isGenerating = true;
-      setBusyUI(true, "ПЕЧАТАЕТ...");
+      // Сбрасываем таймер детектора стирания текста
+      if (erasedTypingTimer) {
+        clearTimeout(erasedTypingTimer);
+        erasedTypingTimer = null;
+      }
+      maxTypedLength = 0;
 
       input.value = "";
       input.style.height = "42px";
@@ -1707,6 +1772,7 @@ ${sliceToSummarize}`;
       const isNar = (text.startsWith("*") && text.endsWith("*")) || (text.startsWith("[") && text.endsWith("]"));
       const cleanContent = isNar ? text.replace(/^[\*\[]+|[\*\]]+$/g, '').trim() : text;
 
+      // Добавляем сообщение Яна в чат МГНОВЕННО (поле ввода сразу свободно для 2-го и 3-го СМС!)
       history.push({
         role: "user",
         content: cleanContent,
@@ -1719,11 +1785,76 @@ ${sliceToSummarize}`;
       renderChat();
       resetAutoTimer();
       closeSuggestions();
+      input.focus();
+
+      // ПРОВЕРКА НА СРОЧНОСТЬ:
+      const urgent = isUrgentMessage(text);
+      if (urgent) {
+        // Если крик капсом или угроза — Амир перебивает МГНОВЕННО без ожидания!
+        if (pendingReplyTimer) clearTimeout(pendingReplyTimer);
+        pendingReplyTimer = null;
+        triggerAmirReply(true);
+      } else {
+        // Обычное СМС: даём Яну возможность написать 2–3 сообщения подряд!
+        // Ждём 10 секунд с момента последнего СМС
+        if (pendingReplyTimer) clearTimeout(pendingReplyTimer);
+        document.getElementById("statusText").textContent = "VP-NET // В СЕТИ";
+        pendingReplyTimer = setTimeout(() => {
+          pendingReplyTimer = null;
+          triggerAmirReply(false);
+        }, 10000);
+      }
+    }
+
+    async function triggerAmirReply(urgent = false) {
+      if (isGenerating) return;
+
+      // Если Ян прямо сейчас печатает следующее сообщение — подождём ещё немного
+      const input = document.getElementById("msgInput");
+      if (input && input.value.trim().length > 0 && !urgent) {
+        document.getElementById("statusText").textContent = "АМИР ЖДЁТ (ТЫ ПЕЧАТАЕШЬ)...";
+        pendingReplyTimer = setTimeout(() => triggerAmirReply(false), 4000);
+        return;
+      }
+
+      isGenerating = true;
+      setBusyUI(true, urgent ? "ТРЕВОГА // АМИР ОТВЕЧАЕТ..." : "АМИР ПЕЧАТАЕТ...");
 
       const ctxLimit = Number(config.contextSize) || 35;
       const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
-      const reply = await callLLM(recent);
 
+      if (urgent) {
+        recent.push({
+          role: "user",
+          content: "[СИСТЕМНАЯ ЗАМЕТКА: Ян написал капсом или прислал срочный крик о помощи. Амир мгновенно перебивает, реагирует с острой сдержанной тревогой, короткими фразами через |||.]"
+        });
+      }
+
+      const reply = await callLLM(recent);
+      isGenerating = false;
+      setBusyUI(false);
+
+      if (reply) {
+        await deliverBubbles(reply);
+      }
+    }
+
+    async function triggerErasedReply() {
+      if (isGenerating || !config.apiKey) return;
+      const input = document.getElementById("msgInput");
+      if (input && input.value.trim().length > 0) return;
+
+      isGenerating = true;
+      setBusyUI(true, "АМИР ПЕЧАТАЕТ...");
+
+      const ctxLimit = Number(config.contextSize) || 35;
+      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      recent.push({
+        role: "user",
+        content: "[СИСТЕМНАЯ ЗАМЕТКА: Терминал показал Амиру, что Ян только что долго печатал сообщение, а потом всё стёр и замолчал. Отреагируй на это от лица Амира: 1–2 коротких СМС через ||| (спроси, что он удалил, или скажи говорить прямо).]"
+      });
+
+      const reply = await callLLM(recent);
       isGenerating = false;
       setBusyUI(false);
 
@@ -1784,13 +1915,58 @@ ${sliceToSummarize}`;
       resetAutoTimer();
     }
 
-    function checkAbsenceAndTrigger() {
-      if (config.autoMinutes > 0 && config.apiKey && !isGenerating) {
-        const diffMinutes = (Date.now() - lastActivity) / (1000 * 60);
-        if (diffMinutes >= config.autoMinutes) {
-          triggerProactive(true);
+    async function checkAbsenceCatchUp() {
+      if (!config.apiKey || isGenerating) return;
+
+      const now = Date.now();
+      const diffMinutes = (now - lastActivity) / (1000 * 60);
+      const diffHours = diffMinutes / 60;
+
+      // Если Ян молчал больше 45 минут (спал, был офлайн, закрыл вкладку):
+      if (diffMinutes >= 45) {
+        lastActivity = now;
+        localStorage.setItem("vp_last_activity", String(lastActivity));
+
+        const hour = new Date().getHours();
+        const isNight = hour >= 23 || hour < 7;
+        let absenceNote = "";
+
+        if (diffHours >= 8) {
+          absenceNote = `Ян не выходил на связь уже ${Math.round(diffHours)} часов. У Амира нарастает сдержанная нервозность и раздражение: он не находит себе места, проверяет камеры, биометрию, грозится взломать гермозамок медблока, если Ян свалился без сил. Короткие, резкие, тревожные СМС.`;
+        } else if (diffHours >= 3) {
+          if (isNight) {
+            absenceNote = `Глубокая ночь (прошло ${Math.round(diffHours)} ч). Амир проверяет датчики сна в медблоке (пульс, температура, неподвижность). Спрашивает, спит ли Ян нормально на кушетке или снова застыл без сна в кресле.`;
+          } else {
+            absenceNote = `Прошло ${Math.round(diffHours)} часов молчания. День. Амир проверяет движение по камерам и приём пищи. Сдержанно требует подать голос.`;
+          }
+        } else {
+          absenceNote = `Прошло около часа молчания. Амир делает короткую дежурную проверку связи, подмечая датчики Яна.`;
+        }
+
+        const ctxLimit = Number(config.contextSize) || 35;
+        const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+        recent.push({
+          role: "user",
+          content: `[СИСТЕМНАЯ ЗАМЕТКА О РЕАЛЬНОМ ВРЕМЕНИ:
+С момента последнего СМС прошло ${Math.round(diffMinutes)} минут (${Math.round(diffHours)} ч). Местное время: ${getTime()}, дата: ${getDateStr()}.
+Обстановка: ${absenceNote}
+Напиши 1–3 коротких СМС через ||| от лица Амира (каждое СМС до 10-12 слов). Без смайликов и звёздочек.]`
+        });
+
+        isGenerating = true;
+        setBusyUI(true, "ВХОДЯЩЕЕ...");
+        const reply = await callLLM(recent);
+        isGenerating = false;
+        setBusyUI(false);
+
+        if (reply) {
+          await deliverBubbles(reply);
         }
       }
+    }
+
+    function checkAbsenceAndTrigger() {
+      checkAbsenceCatchUp();
     }
 
     function resetAutoTimer() {
@@ -1803,7 +1979,7 @@ ${sliceToSummarize}`;
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) {
         syncWithWorker();
-        checkAbsenceAndTrigger();
+        checkAbsenceCatchUp();
       }
     });
 
