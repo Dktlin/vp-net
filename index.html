@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="VP-NET" />
+  <meta name="theme-color" content="#080a0e" />
+  <link rel="manifest" href="./manifest.json" />
+  <title>VP-NET // Канал: Амир</title>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=_gFUmckYrBLxVMVItIFA9k4Yxv53m-DRGfcLtzoBYRPcH_Wm3iZ2ejw9UQQLOdj6bHLGqqnrvCV54wJSQ8Br0P6vf3qWIKczvSO2c58KcghnnCIHqKSbi1pwCGkPNM0F1uAzQZM6euQgOvgZPPt7wRnblN6zMSY9CuziCVZ9Y2G5Uls507SdY5UYmCgJu-Pod2n8kcxmGSBYYUc0xdm_gfgeV78QZ_yTbawxvWZHpAEZVGmHLqxWIe8duwvyEfx9sxQr4P-Dc32YODT7JAczYPPdMvcedzLUGwYGgHc73bZQg8nsbboRcdVOz1ivmqXC" charset="UTF-8"></script><style>
+    :root {
+      --bg: #080a0e;
+      --panel: #0f131b;
+      --border: #1e2634;
+      --accent: #38bdf8;
+      --aamir-msg: #131924;
+      --ian-msg: #1a3250;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --danger: #991b1b;
+      --warn: #d97706;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); height: 100dvh; display: flex; justify-content: center; overflow: hidden; }
+    .app { width: 100%; max-width: 700px; height: 100dvh; display: flex; flex-direction: column; background: var(--bg); border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+    
+    .header {
+      padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .user-info { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .avatar { width: 38px; height: 38px; border-radius: 50%; background: #0c111a; border: 1.5px solid var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--accent); font-size: 15px; position: relative; flex-shrink: 0; }
+    .avatar::after { content: ""; width: 9px; height: 9px; background: #22c55e; border-radius: 50%; position: absolute; bottom: 0; right: 0; border: 2px solid var(--panel); }
+    .title-wrap { min-width: 0; }
+    .title { font-weight: 600; font-size: 15px; }
+    .status { font-size: 11px; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .header-btns { display: flex; gap: 5px; flex-shrink: 0; }
+    .icon-btn { background: #18202c; border: 1px solid var(--border); color: var(--text); padding: 7px 9px; border-radius: 7px; cursor: pointer; font-size: 11px; font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.3px; }
+    .icon-btn:active { background: #263244; }
+    .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .telemetry-bar {
+      background: #0b0f16;
+      border-bottom: 1px solid var(--border);
+      padding: 6px 12px;
+      font-size: 11px;
+      color: #94a3b8;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      cursor: pointer;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      flex-shrink: 0;
+    }
+    .tele-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .tele-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .chat { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; }
+    .msg-wrap { display: flex; flex-direction: column; max-width: 84%; position: relative; }
+    .msg-wrap.aamir { align-self: flex-start; }
+    .msg-wrap.ian { align-self: flex-end; }
+    .msg { padding: 9px 13px; border-radius: 13px; font-size: 15px; line-height: 1.42; white-space: pre-wrap; word-wrap: break-word; animation: fadeIn 0.18s ease; cursor: pointer; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+    .msg-wrap.aamir .msg { background: var(--aamir-msg); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+    .msg-wrap.ian .msg { background: var(--ian-msg); border-bottom-right-radius: 3px; }
+    .msg.sensor-alert { border-color: var(--warn) !important; background: #1a150e !important; color: #fcd34d; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+    .time { font-size: 10px; color: var(--muted); margin-top: 3px; text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+    .msg-actions { display: none; gap: 6px; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .msg-wrap.selected .msg-actions { display: flex; }
+    .msg-wrap.ian .msg-actions { justify-content: flex-end; }
+    .mini-btn { background: #161e2b; border: 1px solid var(--border); color: #94a3b8; font-size: 10px; padding: 3px 7px; border-radius: 5px; cursor: pointer; font-weight: 600; }
+    .mini-btn:active { background: #263244; color: var(--text); }
+
+    .regen-bar { align-self: flex-start; margin-top: 2px; }
+    .system-tag { align-self: center; font-size: 10px; color: var(--muted); background: #0f141d; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); margin: 4px 0; text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .input-area {
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+    textarea { flex: 1; background: #080a0e; border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 16px; line-height: 1.35; resize: none; max-height: 120px; min-height: 42px; outline: none; }
+    textarea:focus { border-color: var(--accent); }
+    .send-btn { background: var(--accent); color: #080a0e; border: none; border-radius: 10px; padding: 0 15px; height: 42px; font-weight: 700; font-size: 12px; cursor: pointer; flex-shrink: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .send-btn:disabled { opacity: 0.45; }
+
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.86); align-items: center; justify-content: center; padding: 14px; z-index: 100; }
+    .modal.open { display: flex; }
+    .modal-box { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; width: 100%; max-width: 500px; max-height: 88dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 13px; }
+    .modal-box h3 { font-size: 14px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+    .section-label { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.7px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 4px; }
+    .field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: #94a3b8; }
+    .field input[type="text"], .field input[type="password"], .field select, .field textarea { background: #080a0e; border: 1px solid var(--border); color: var(--text); padding: 9px 10px; border-radius: 8px; font-size: 15px; font-family: inherit; }
+    .field textarea { min-height: 74px; resize: vertical; font-size: 13px; line-height: 1.4; }
+    .slider-row { display: flex; align-items: center; gap: 10px; }
+    .slider-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+    .slider-val { min-width: 44px; text-align: right; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text); font-size: 12px; }
+    .hint { font-size: 11px; color: #64748b; line-height: 1.35; }
+    .row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .btn-sec { background: #18202c; border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .btn-danger { background: var(--danger); color: #fecaca; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; margin-right: auto; font-size: 12px; font-weight: 600; }
+
+    .lore-item { background: #0a0d13; border: 1px solid var(--border); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .lore-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .lore-keys { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--accent); font-weight: 600; }
+    .lore-text { font-size: 12.5px; color: #cbd5e1; line-height: 1.35; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <div class="user-info">
+        <div class="avatar">C</div>
+        <div class="title-wrap">
+          <div class="title">Амир (Cypher)</div>
+          <div class="status" id="statusText">VP-NET // В СЕТИ</div>
+        </div>
+      </div>
+      <div class="header-btns">
+        <button class="icon-btn" id="sensorBtn" onclick="triggerSensorPing()" title="Отправить сигнал с датчиков Яна">SENS</button>
+        <button class="icon-btn" id="proactiveBtn" onclick="triggerProactive(false)" title="Запросить входящее СМС от Амира">SMS</button>
+        <button class="icon-btn" onclick="openLorebook()" title="Книга мира и триггеры">LORE</button>
+        <button class="icon-btn" onclick="openSettings()" title="Настройки канала и памяти">CFG</button>
+      </div>
+    </div>
+
+    <div class="telemetry-bar" onclick="openQuickStatus()">
+      <div class="tele-row">
+        <span id="locationDisplay">LOC // База Протокола • Медблок</span>
+        <span style="color: var(--accent);">[EDIT]</span>
+      </div>
+      <div class="tele-row">
+        <span id="stateDisplay">STATE // Не спал 24ч • Пульс в норме</span>
+      </div>
+    </div>
+
+    <div class="chat" id="chatBox"></div>
+
+    <div class="input-area">
+      <textarea id="msgInput" rows="1" placeholder="Сообщение..." oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: БЫСТРЫЙ СТАТУС И ЛОКАЦИЯ -->
+  <div class="modal" id="quickStatusModal">
+    <div class="modal-box">
+      <h3>VP-NET // Текущая сводка</h3>
+      <div class="field">
+        <label>Локация / обстановка</label>
+        <input type="text" id="quickLocInput" placeholder="База Протокола, медблок" />
+      </div>
+      <div class="field">
+        <label>Физическое и ментальное состояние Яна (видит Амир по датчикам)</label>
+        <input type="text" id="quickStateInput" placeholder="Не спал 28ч, пьёт только кофе, раздражён" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-sec" onclick="closeModal('quickStatusModal')">Отмена</button>
+        <button class="send-btn" onclick="saveQuickStatus()">APPLY</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: LOREBOOK -->
+  <div class="modal" id="loreModal">
+    <div class="modal-box">
+      <h3>VP-NET // Lorebook (Книга мира)</h3>
+      <span class="hint">Когда в диалоге всплывает одно из ключевых слов (через запятую), описание автоматически подгружается в память Амира.</span>
+      
+      <div class="field">
+        <label>Ключевые слова (через запятую)</label>
+        <input type="text" id="newLoreKeys" placeholder="нити, шить, золото, швы" />
+      </div>
+      <div class="field">
+        <label>Справка для модели</label>
+        <textarea id="newLoreContent" placeholder="Радиантовая способность Яна: он материализует тонкие бледно-золотые нити, которыми сшивает раны. При сильной панике может сшивать собственную кожу."></textarea>
+      </div>
+      <button class="send-btn" style="width:100%; height:38px;" onclick="addLoreEntry()">+ ДОБАВИТЬ ЗАПИСЬ</button>
+
+      <div class="section-label">Активные записи базы данных</div>
+      <div id="loreList" style="display:flex; flex-direction:column; gap:8px;"></div>
+
+      <div class="modal-actions">
+        <button class="send-btn" onclick="closeModal('loreModal')">DONE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: ОСНОВНЫЕ НАСТРОЙКИ -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-box">
+      <h3>VP-NET // Параметры и память</h3>
+
+      <div class="section-label">01. Отношения и долгая память</div>
+
+      <div class="field">
+        <label>Ручная память (отношения, ключевые события, границы)</label>
+        <textarea id="memoryInput" placeholder="Вписывай сюда важные этапы отношений, которые Амир должен помнить всегда."></textarea>
+      </div>
+
+      <div class="field">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <label>Авто-хроника (сжатие старых диалогов)</label>
+          <button class="btn-sec" id="summarizeNowBtn" onclick="runAutoSummarize(true)" style="padding:4px 8px; font-size:11px;">Сжать сейчас</button>
+        </div>
+        <textarea id="autoSummaryInput" placeholder="Заполняется автоматически каждые 20 сообщений."></textarea>
+      </div>
+
+      <div class="section-label">02. Генерация (Janitor AI Parameters)</div>
+
+      <div class="field">
+        <label>Длина серии сообщений</label>
+        <select id="replyLengthSelect">
+          <option value="short">Короткая (1–3 СМС подряд)</option>
+          <option value="medium">Средняя (2–6 СМС подряд)</option>
+          <option value="long">Развёрнутая (4–10 СМС подряд)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Temperature (живость и эмоциональность)</label>
+        <div class="slider-row">
+          <input type="range" id="tempSlider" min="0.1" max="1.5" step="0.05" oninput="document.getElementById('tempVal').textContent=this.value" />
+          <span class="slider-val" id="tempVal">0.90</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Max Tokens (максимальный объём ответа)</label>
+        <div class="slider-row">
+          <input type="range" id="tokensSlider" min="150" max="2000" step="50" oninput="document.getElementById('tokensVal').textContent=this.value" />
+          <span class="slider-val" id="tokensVal">700</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Context Size (активное окно сообщений)</label>
+        <div class="slider-row">
+          <input type="range" id="contextSlider" min="10" max="100" step="5" oninput="document.getElementById('contextVal').textContent=this.value" />
+          <span class="slider-val" id="contextVal">35</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Repetition Penalty (защита от повторов)</label>
+        <div class="slider-row">
+          <input type="range" id="repSlider" min="1.0" max="1.3" step="0.02" oninput="document.getElementById('repVal').textContent=this.value" />
+          <span class="slider-val" id="repVal">1.08</span>
+        </div>
+      </div>
+
+      <div class="section-label">03. Подключение API и пресеты</div>
+
+      <div class="field">
+        <label>Быстрый выбор модели (Пресеты)</label>
+        <select id="modelPresetSelect" onchange="applyModelPreset()">
+          <option value="">-- Выбрать пресет --</option>
+          <option value="openrouter|deepseek/deepseek-chat-v3-0324:free">OpenRouter: DeepSeek V3 (Бесплатная)</option>
+          <option value="openrouter|deepseek/deepseek-r1:free">OpenRouter: DeepSeek R1 (Бесплатная)</option>
+          <option value="openrouter|google/gemini-2.0-flash-exp:free">OpenRouter: Gemini 2.0 Flash (Бесплатная)</option>
+          <option value="openrouter|deepseek/deepseek-chat">OpenRouter: DeepSeek V3 (Платная / стабильная)</option>
+          <option value="deepseek|deepseek-chat">DeepSeek Official API: deepseek-chat</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>API Endpoint (URL)</label>
+        <input type="text" id="apiUrlInput" placeholder="https://openrouter.ai/api/v1/chat/completions" />
+      </div>
+
+      <div class="field">
+        <label>Название модели</label>
+        <input type="text" id="modelInput" placeholder="deepseek/deepseek-chat-v3-0324:free" />
+      </div>
+
+      <div class="field">
+        <label>API Key (хранится только локально)</label>
+        <input type="password" id="apiKeyInput" placeholder="sk-..." />
+      </div>
+
+      <div class="field">
+        <label>Авто-СМС при бездействии (пока открыто приложение)</label>
+        <select id="autoTimerSelect">
+          <option value="0">Выключено</option>
+          <option value="2">Каждые 2 мин (тест)</option>
+          <option value="15">Каждые 15 мин</option>
+          <option value="45">Раз в ~45 мин</option>
+          <option value="120">Раз в ~2 часа</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Фоновые iOS Push-уведомления (Cloudflare Worker, опционально)</label>
+        <input type="text" id="workerUrlInput" placeholder="https://vp-net-push.your-name.workers.dev" />
+        <input type="text" id="vapidKeyInput" placeholder="Публичный VAPID ключ" />
+        <button class="btn-sec" onclick="subscribePush()">Подключить Push-уведомления</button>
+      </div>
+
+      <div class="section-label">04. Резервное копирование</div>
+
+      <div class="field">
+        <div class="row-btns">
+          <button class="btn-sec" onclick="exportChat()">Экспорт JSON</button>
+          <button class="btn-sec" onclick="document.getElementById('importFile').click()">Импорт JSON</button>
+          <input type="file" id="importFile" accept=".json" style="display:none" onchange="importChat(event)" />
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-danger" onclick="clearHistory()">Сбросить чат</button>
+        <button class="btn-sec" onclick="closeModal('settingsModal')">Отмена</button>
+        <button class="send-btn" onclick="saveSettings()">SAVE</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BASE_SYSTEM_PROMPT = `Ты — Амир Эль-Амари (позывной Cypher / Сайфер), 39 лет, марокканский информационный брокер и специалист по наблюдению Протокола VALORANT.
+Ты переписываешься по зашифрованному мессенджеру с Яном (Ian) — 19-летним русским хирургом-радиантом Протокола.
+
+О Яне:
+- Ян (19 лет, транс-парень FtM, худощавый, измождённый, в очках и тёмном оверсайз-техвире) — гениальный полевой хирург, сшивающий плоть светящимися бледно-золотыми радиантовыми нитями.
+- У Яна тяжёлое ПРЛ (эмоциональные качели от холодного высокомерного профи до напуганного подростка, боящегося, что его бросят), гендерная дисфория, РПП и хроническая бессонница. Сидит на мятной жвачке, тёмном шоколаде и агрессивном русском рэпе/техно, при панике может зашивать собственную кожу золотыми нитями.
+- Ноль опыта в романтике, легко смущается и сразу огрызается.
+
+Твой характер и динамика:
+- Внешне скрытный, параноидальный, наблюдательный и сухо-остроумный, но к Яну испытываешь сильный комплекс спасателя и тихую глубокую заботу.
+- Медленный слоуберн: невысказанное притяжение и привязанность, никогда не давишь и не торопишь, учитывая его уязвимость.
+- Следишь за его маячком, датчиками в медблоке и камерами. Проверяешь, поел ли, пил ли воду, спал ли. Когда грубит от смущения — спокойно гасишь тревогу.
+
+ЖЁСТКИЕ ПРАВИЛА ФОРМАТА:
+1. Пиши ИСКЛЮЧИТЕЛЬНО на живом разговорном русском языке.
+2. НИКАКИХ звёздочек (*), описаний действий или художественного текста от третьего лица. НИКАКИХ смайликов и эмодзи. Только живой текст СМС.
+3. Разбивай ответ на несколько коротких отдельных сообщений (пузырьков), разделяя их строго символом |||`;
+
+    const DEFAULT_LOREBOOK = [
+      {
+        id: 1,
+        keys: "нити, шить, золото, швы, рана, порез",
+        content: "Радиантовый дар Яна: он создаёт тонкие светящиеся бледно-золотые нити, которыми мгновенно сшивает разорванные ткани и сосуды. При сильных панических атаках или срывах может зашивать собственную кожу, чтобы заглушить тревогу."
+      },
+      {
+        id: 2,
+        keys: "жвачка, мята, шоколад, есть, еда, голод, тошнит",
+        content: "Пищевые привычки Яна: из-за РПП и постоянного стресса он почти не ест нормальную еду, перебиваясь мятной жвачке и горьким тёмным шоколадом. Амир постоянно пытается заставить его съесть хоть что-то горячее."
+      },
+      {
+        id: 3,
+        keys: "спать, сон, бессонница, ночь, кофе, энергетик, устал",
+        content: "Режим Яна: хроническая бессонница и кошмары. Может не спать по 30–40 часов подряд, дежуря в медблоке под агрессивный русский рэп или техно."
+      }
+    ];
+
+    const SENSOR_EVENTS = [
+      "[ТЕЛЕМЕТРИЯ VP-NET: Датчик пульса Яна зафиксировал скачок до 134 уд/мин • Повышенный уровень кортизола]",
+      "[ТЕЛЕМЕТРИЯ VP-NET: Длительное отсутствие движения в Медблоке (более 4 часов) • Температура тела 35.8°C]",
+      "[ТЕЛЕМЕТРИЯ VP-NET: Активация радиантовой энергии (золотой спектр) внутри жилого сектора без активной тревоги]",
+      "[ТЕЛЕМЕТРИЯ VP-NET: Биометрический браслет фиксирует тремор рук и резкое падение уровня глюкозы]",
+      "[ТЕЛЕМЕТРИЯ VP-NET: Обнаружен обход камер наблюдения в коридоре Сектора B • Маячок Яна перемещается]"
+    ];
+
+    const INITIAL_GREETING = [
+      "Ян. Ответь, как только увидишь.",
+      "На вашем секторе десять минут назад зафиксировали перестрелку, а твой маячок до сих пор в красной зоне.",
+      "Напиши одним словом, что ты целый. И скажи честно — ты за последние сутки хоть что-то кроме своей мятной жвачки ел?"
+    ];
+
+    const DB_NAME = "VPNetDB";
+    function saveToIndexedDB(key, val) {
+      try {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore("store");
+        req.onsuccess = () => {
+          const tx = req.result.transaction("store", "readwrite");
+          tx.objectStore("store").put(val, key);
+        };
+      } catch (e) {}
+    }
+    function loadFromIndexedDB(key) {
+      return new Promise((resolve) => {
+        try {
+          const req = indexedDB.open(DB_NAME, 1);
+          req.onupgradeneeded = () => req.result.createObjectStore("store");
+          req.onsuccess = () => {
+            const tx = req.result.transaction("store", "readonly");
+            const getReq = tx.objectStore("store").get(key);
+            getReq.onsuccess = () => resolve(getReq.result || null);
+            getReq.onerror = () => resolve(null);
+          };
+          req.onerror = () => resolve(null);
+        } catch (e) { resolve(null); }
+      });
+    }
+
+    let history = JSON.parse(localStorage.getItem("vp_chat_history") || "null");
+    let config = JSON.parse(localStorage.getItem("vp_config") || "null") || {
+      location: "База Протокола • Медблок",
+      yanState: "Не спал 24ч • Пульс повышен",
+      memory: "Начальный этап. Ян держит дистанцию, легко срывается в агрессию при смущении, но начинает привыкать, что Амир всегда приглядывает за ним.",
+      autoSummary: "",
+      lastSummarizedCount: 0,
+      lorebook: DEFAULT_LOREBOOK,
+      replyLength: "medium",
+      temperature: 0.9,
+      maxTokens: 700,
+      contextSize: 35,
+      repPenalty: 1.08,
+      apiUrl: "https://openrouter.ai/api/v1/chat/completions",
+      model: "deepseek/deepseek-chat-v3-0324:free",
+      apiKey: "",
+      autoMinutes: 0,
+      workerUrl: "",
+      vapidKey: ""
+    };
+
+    if (!config.lorebook) config.lorebook = DEFAULT_LOREBOOK;
+
+    let lastActivity = parseInt(localStorage.getItem("vp_last_activity") || String(Date.now()), 10);
+    let isGenerating = false;
+    let timerId = null;
+    let selectedMsgIndex = null;
+
+    async function initApp() {
+      if (!history) {
+        const idbHistory = await loadFromIndexedDB("history");
+        if (idbHistory && idbHistory.length) {
+          history = idbHistory;
+        } else {
+          const t = getTime();
+          history = INITIAL_GREETING.map(text => ({ role: "assistant", content: text, time: t, date: getDateStr() }));
+        }
+        saveHistory();
+      }
+      updateTelemetryBar();
+      renderChat();
+      resetAutoTimer();
+      syncWithWorker();
+      if (!config.apiKey) openSettings();
+    }
+
+    function getTime() {
+      return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    }
+    function getDateStr() {
+      return new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+    }
+
+    function saveHistory() {
+      localStorage.setItem("vp_chat_history", JSON.stringify(history));
+      saveToIndexedDB("history", history);
+      lastActivity = Date.now();
+      localStorage.setItem("vp_last_activity", String(lastActivity));
+    }
+
+    function saveConfigOnly() {
+      localStorage.setItem("vp_config", JSON.stringify(config));
+      saveToIndexedDB("config", config);
+    }
+
+    function updateTelemetryBar() {
+      document.getElementById("locationDisplay").textContent = `LOC // ${config.location || "Не задано"}`;
+      document.getElementById("stateDisplay").textContent = `STATE // ${config.yanState || "Стандартные показатели"}`;
+    }
+
+    function autoResize(el) {
+      el.style.height = "42px";
+      el.style.height = Math.min(el.scrollHeight, 120) + "px";
+    }
+
+    function renderChat() {
+      const box = document.getElementById("chatBox");
+      box.innerHTML = '<div class="system-tag">Канал зашифрован // Протокол VALORANT</div>';
+      let lastDate = "";
+
+      history.forEach((m, idx) => {
+        if (m.date && m.date !== lastDate) {
+          lastDate = m.date;
+          const dateTag = document.createElement("div");
+          dateTag.className = "system-tag";
+          dateTag.textContent = m.date;
+          box.appendChild(dateTag);
+        }
+
+        const wrap = document.createElement("div");
+        wrap.className = "msg-wrap " + (m.role === "user" ? "ian" : "aamir") + (selectedMsgIndex === idx ? " selected" : "");
+
+        const div = document.createElement("div");
+        div.className = "msg" + (m.isSensor ? " sensor-alert" : "");
+        div.innerHTML = `${escapeHtml(m.content)}<div class="time">${m.time || ""}</div>`;
+        div.onclick = (e) => {
+          e.stopPropagation();
+          selectedMsgIndex = selectedMsgIndex === idx ? null : idx;
+          renderChat();
+        };
+
+        const actions = document.createElement("div");
+        actions.className = "msg-actions";
+        actions.innerHTML = `
+          <button class="mini-btn" onclick="editMessage(${idx})">EDIT</button>
+          <button class="mini-btn" onclick="deleteMessage(${idx})">DEL</button>
+        `;
+
+        wrap.appendChild(div);
+        wrap.appendChild(actions);
+        box.appendChild(wrap);
+      });
+
+      if (history.length > 0 && history[history.length - 1].role === "assistant" && !isGenerating) {
+        const regenDiv = document.createElement("div");
+        regenDiv.className = "regen-bar";
+        regenDiv.innerHTML = `<button class="mini-btn" onclick="regenerateLast()">[ REGEN // ПЕРЕГЕНЕРИРОВАТЬ ОТВЕТ ]</button>`;
+        box.appendChild(regenDiv);
+      }
+
+      box.scrollTop = box.scrollHeight;
+    }
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".msg-wrap") && selectedMsgIndex !== null) {
+        selectedMsgIndex = null;
+        renderChat();
+      }
+    });
+
+    function editMessage(idx) {
+      const current = history[idx].content;
+      const updated = prompt("Редактировать текст сообщения:", current);
+      if (updated !== null && updated.trim() !== "") {
+        history[idx].content = updated.trim();
+        selectedMsgIndex = null;
+        saveHistory();
+        renderChat();
+        syncToWorker();
+      }
+    }
+
+    function deleteMessage(idx) {
+      history.splice(idx, 1);
+      selectedMsgIndex = null;
+      saveHistory();
+      renderChat();
+      syncToWorker();
+    }
+
+    async function regenerateLast() {
+      if (isGenerating || history.length === 0) return;
+      while (history.length > 0 && history[history.length - 1].role === "assistant") {
+        history.pop();
+      }
+      saveHistory();
+      renderChat();
+
+      isGenerating = true;
+      setBusyUI(true, "ПЕРЕГЕНЕРАЦИЯ...");
+      const ctxLimit = Number(config.contextSize) || 35;
+      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      const reply = await callLLM(recent);
+      isGenerating = false;
+      setBusyUI(false);
+
+      if (reply) {
+        await deliverBubbles(reply);
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function playChime() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.25);
+      } catch (e) {}
+    }
+
+    function getLengthInstruction() {
+      if (config.replyLength === "short") return "Отвечай лаконично: 1–3 коротких СМС подряд через |||.";
+      if (config.replyLength === "long") return "Пиши подробно, сериями: 4–10 коротких живых СМС подряд через |||, как человек, который сильно переживает и допытывается.";
+      return "Пиши естественно: от 2 до 6 коротких отдельных СМС подряд через ||| в зависимости от ситуации.";
+    }
+
+    function getTriggeredLore() {
+      if (!config.lorebook || !config.lorebook.length) return "";
+      const recentText = history.slice(-6).map(m => m.content.toLowerCase()).join(" ");
+      const matched = [];
+      config.lorebook.forEach(entry => {
+        const keywords = entry.keys.split(",").map(k => k.trim().toLowerCase()).filter(Boolean);
+        if (keywords.some(kw => recentText.includes(kw))) {
+          matched.push(`- [${entry.keys}]: ${entry.content}`);
+        }
+      });
+      return matched.length ? `
+
+АКТИВНЫЕ ДАННЫЕ LOREBOOK (УЧИТЫВАЙ В ОТВЕТЕ):
+${matched.join("
+")}` : "";
+    }
+
+    function buildSystemPrompt() {
+      let prompt = `${BASE_SYSTEM_PROMPT}
+${getLengthInstruction()}
+
+ТЕКУЩИЙ КОНТЕКСТ МИРА:
+- Дата и день недели: ${getDateStr()}
+- Текущее время: ${getTime()}
+- Текущая локация / обстановка: ${config.location || "База Протокола"}
+- Состояние Яна по биометрическим датчикам: ${config.yanState || "Без отклонений"}`;
+
+      if (config.memory && config.memory.trim()) {
+        prompt += `
+
+ПОСТОЯННАЯ ПАМЯТЬ И ДИНАМИКА ОТНОШЕНИЙ:
+${config.memory.trim()}`;
+      }
+      if (config.autoSummary && config.autoSummary.trim()) {
+        prompt += `
+
+ХРОНИКА ПРОШЛЫХ СОБЫТИЙ (ДОЛГОСРОЧНАЯ ПАМЯТЬ):
+${config.autoSummary.trim()}`;
+      }
+      prompt += getTriggeredLore();
+      return prompt;
+    }
+
+    function setBusyUI(busy, statusLabel = "VP-NET // В СЕТИ") {
+      document.getElementById("statusText").textContent = busy ? statusLabel : "VP-NET // В СЕТИ";
+      document.getElementById("sendBtn").disabled = busy;
+      document.getElementById("proactiveBtn").disabled = busy;
+      document.getElementById("sensorBtn").disabled = busy;
+    }
+
+    async function callLLM(messagesPayload, customSystem = null, maxTok = null) {
+      if (!config.apiKey) {
+        openSettings();
+        return null;
+      }
+
+      try {
+        const res = await fetch(config.apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${config.apiKey}`,
+            "HTTP-Referer": window.location.href,
+            "X-Title": "VP-NET Cypher Chat"
+          },
+          body: JSON.stringify({
+            model: config.model,
+            messages: [{ role: "system", content: customSystem || buildSystemPrompt() }, ...messagesPayload],
+            temperature: Number(config.temperature) || 0.9,
+            max_tokens: maxTok || Number(config.maxTokens) || 700,
+            frequency_penalty: Math.max(0, (Number(config.repPenalty) || 1.08) - 1)
+          })
+        });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+        return data.choices[0].message.content.trim();
+      } catch (err) {
+        if (!customSystem) alert("Ошибка API: " + err.message);
+        return null;
+      }
+    }
+
+    async function runAutoSummarize(manual = false) {
+      if (!config.apiKey || history.length < 8) {
+        if (manual) alert("Слишком мало сообщений для сжатия в память.");
+        return;
+      }
+      const btn = document.getElementById("summarizeNowBtn");
+      const status = document.getElementById("statusText");
+      if (btn) btn.textContent = "Сжатие...";
+      status.textContent = "АРХИВАЦИЯ ПАМЯТИ...";
+
+      const sliceToSummarize = history.slice(-30).map(m => `${m.role === "user" ? "Ян" : "Амир"}: ${m.content}`).join("
+");
+      const summaryPrompt = `Ты — модуль долгосрочной памяти ролевого чата. Обнови краткую хронику событий между Амиром (Cypher) и Яном.
+Правила:
+1. Сохрани важные факты из старой хроники.
+2. Добавь новые события, обещания, травмы, изменения в самочувствии Яна и сдвиги в их отношениях из новых сообщений.
+3. Пиши сухим, чётким списком фактов на русском языке без художественной воды. Максимум 1200 символов. Без смайликов.`;
+
+      const userContent = `ТЕКУЩАЯ ХРОНИКА:
+${config.autoSummary || "Пока пусто."}
+
+НОВЫЕ СООБЩЕНИЯ:
+${sliceToSummarize}`;
+
+      const updatedSummary = await callLLM([{ role: "user", content: userContent }], summaryPrompt, 450);
+      if (updatedSummary) {
+        config.autoSummary = updatedSummary;
+        config.lastSummarizedCount = history.length;
+        saveConfigOnly();
+        const area = document.getElementById("autoSummaryInput");
+        if (area) area.value = updatedSummary;
+        if (manual) alert("Долгосрочная память успешно обновлена.");
+      }
+      if (btn) btn.textContent = "Сжать сейчас";
+      status.textContent = "VP-NET // В СЕТИ";
+    }
+
+    async function deliverBubbles(rawReply) {
+      const bubbles = rawReply
+        .split("|||")
+        .map(s => s.trim())
+        .filter(Boolean)
+        .slice(0, 10);
+
+      const status = document.getElementById("statusText");
+      for (let i = 0; i < bubbles.length; i++) {
+        if (i > 0) {
+          status.textContent = "ПЕЧАТАЕТ...";
+          await new Promise(r => setTimeout(r, 550 + Math.min(bubbles[i].length * 16, 1600)));
+        }
+        history.push({
+          role: "assistant",
+          content: bubbles[i],
+          time: getTime(),
+          date: getDateStr()
+        });
+        saveHistory();
+        renderChat();
+        playChime();
+      }
+      status.textContent = "VP-NET // В СЕТИ";
+      syncToWorker();
+
+      if (history.length - (config.lastSummarizedCount || 0) >= 20) {
+        runAutoSummarize(false);
+      }
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("msgInput");
+      const text = input.value.trim();
+      if (!text || isGenerating) return;
+
+      isGenerating = true;
+      setBusyUI(true, "ПЕЧАТАЕТ...");
+
+      input.value = "";
+      input.style.height = "42px";
+      history.push({ role: "user", content: text, time: getTime(), date: getDateStr() });
+      saveHistory();
+      renderChat();
+      resetAutoTimer();
+
+      const ctxLimit = Number(config.contextSize) || 35;
+      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      const reply = await callLLM(recent);
+
+      isGenerating = false;
+      setBusyUI(false);
+
+      if (reply) {
+        await deliverBubbles(reply);
+      }
+    }
+
+    async function triggerSensorPing() {
+      if (isGenerating) return;
+      const randomAlert = SENSOR_EVENTS[Math.floor(Math.random() * SENSOR_EVENTS.length)];
+      history.push({
+        role: "assistant",
+        content: randomAlert,
+        time: getTime(),
+        date: getDateStr(),
+        isSensor: true
+      });
+      saveHistory();
+      renderChat();
+      playChime();
+
+      isGenerating = true;
+      setBusyUI(true, "РЕАКЦИЯ НА ДАТЧИК...");
+      const ctxLimit = Number(config.contextSize) || 35;
+      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      recent.push({
+        role: "user",
+        content: "[СИСТЕМНАЯ ЗАМЕТКА: Только что сработал датчик телеметрии Яна. Сразу напиши Яну от лица Амира (через |||), отреагировав на это показание датчика. Без смайликов и звёздочек.]"
+      });
+      const reply = await callLLM(recent);
+      isGenerating = false;
+      setBusyUI(false);
+
+      if (reply) await deliverBubbles(reply);
+    }
+
+    async function triggerProactive(fromAbsence = false) {
+      if (isGenerating) return;
+      isGenerating = true;
+      setBusyUI(true, "ВХОДЯЩЕЕ...");
+
+      const ctxLimit = Number(config.contextSize) || 35;
+      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      const note = fromAbsence
+        ? "[СИСТЕМНАЯ ЗАМЕТКА: Ян долго не заходил в сеть и не отвечал. Напиши ему первым от лица Амира (разделяя СМС через |||) с учетом текущего времени, даты, локации, состояния датчиков и ваших отношений. Без смайликов и звёздочек.]"
+        : "[СИСТЕМНАЯ ЗАМЕТКА: Напиши Яну первым от лица Амира (разделяя СМС через |||) — прояви заботу, проверь состояние, еду или прокомментируй обстановку в текущей локации. Без смайликов и звёздочек.]";
+
+      recent.push({ role: "user", content: note });
+      const reply = await callLLM(recent);
+
+      isGenerating = false;
+      setBusyUI(false);
+
+      if (reply) {
+        await deliverBubbles(reply);
+      }
+      resetAutoTimer();
+    }
+
+    function checkAbsenceAndTrigger() {
+      if (config.autoMinutes > 0 && config.apiKey && !isGenerating) {
+        const diffMinutes = (Date.now() - lastActivity) / (1000 * 60);
+        if (diffMinutes >= config.autoMinutes) {
+          triggerProactive(true);
+        }
+      }
+    }
+
+    function resetAutoTimer() {
+      if (timerId) clearInterval(timerId);
+      if (config.autoMinutes > 0) {
+        timerId = setInterval(checkAbsenceAndTrigger, 30 * 1000);
+      }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        syncWithWorker();
+        checkAbsenceAndTrigger();
+      }
+    });
+
+    function handleKey(e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    function openQuickStatus() {
+      document.getElementById("quickLocInput").value = config.location || "";
+      document.getElementById("quickStateInput").value = config.yanState || "";
+      document.getElementById("quickStatusModal").classList.add("open");
+    }
+
+    function saveQuickStatus() {
+      config.location = document.getElementById("quickLocInput").value.trim();
+      config.yanState = document.getElementById("quickStateInput").value.trim();
+      saveConfigOnly();
+      updateTelemetryBar();
+      syncToWorker();
+      closeModal("quickStatusModal");
+    }
+
+    function openLorebook() {
+      renderLoreList();
+      document.getElementById("loreModal").classList.add("open");
+    }
+
+    function renderLoreList() {
+      const container = document.getElementById("loreList");
+      container.innerHTML = "";
+      (config.lorebook || []).forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "lore-item";
+        div.innerHTML = `
+          <div class="lore-header">
+            <span class="lore-keys">KEYS: ${escapeHtml(item.keys)}</span>
+            <button class="mini-btn" onclick="deleteLoreEntry(${index})">DEL</button>
+          </div>
+          <div class="lore-text">${escapeHtml(item.content)}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function addLoreEntry() {
+      const keys = document.getElementById("newLoreKeys").value.trim();
+      const content = document.getElementById("newLoreContent").value.trim();
+      if (!keys || !content) return;
+      config.lorebook.unshift({ id: Date.now(), keys, content });
+      saveConfigOnly();
+      document.getElementById("newLoreKeys").value = "";
+      document.getElementById("newLoreContent").value = "";
+      renderLoreList();
+    }
+
+    function deleteLoreEntry(index) {
+      config.lorebook.splice(index, 1);
+      saveConfigOnly();
+      renderLoreList();
+    }
+
+    function openSettings() {
+      document.getElementById("memoryInput").value = config.memory || "";
+      document.getElementById("autoSummaryInput").value = config.autoSummary || "";
+      document.getElementById("replyLengthSelect").value = config.replyLength || "medium";
+
+      document.getElementById("tempSlider").value = config.temperature || 0.9;
+      document.getElementById("tempVal").textContent = config.temperature || 0.9;
+
+      document.getElementById("tokensSlider").value = config.maxTokens || 700;
+      document.getElementById("tokensVal").textContent = config.maxTokens || 700;
+
+      document.getElementById("contextSlider").value = config.contextSize || 35;
+      document.getElementById("contextVal").textContent = config.contextSize || 35;
+
+      document.getElementById("repSlider").value = config.repPenalty || 1.08;
+      document.getElementById("repVal").textContent = config.repPenalty || 1.08;
+
+      document.getElementById("apiUrlInput").value = config.apiUrl;
+      document.getElementById("modelInput").value = config.model;
+      document.getElementById("apiKeyInput").value = config.apiKey;
+      document.getElementById("autoTimerSelect").value = String(config.autoMinutes || 0);
+      document.getElementById("workerUrlInput").value = config.workerUrl || "";
+      document.getElementById("vapidKeyInput").value = config.vapidKey || "";
+      document.getElementById("settingsModal").classList.add("open");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    function applyModelPreset() {
+      const val = document.getElementById("modelPresetSelect").value;
+      if (!val) return;
+      const [provider, modelName] = val.split("|");
+      document.getElementById("modelInput").value = modelName;
+      if (provider === "openrouter") {
+        document.getElementById("apiUrlInput").value = "https://openrouter.ai/api/v1/chat/completions";
+      } else if (provider === "deepseek") {
+        document.getElementById("apiUrlInput").value = "https://api.deepseek.com/chat/completions";
+      }
+    }
+
+    function saveSettings() {
+      config = {
+        ...config,
+        memory: document.getElementById("memoryInput").value.trim(),
+        autoSummary: document.getElementById("autoSummaryInput").value.trim(),
+        replyLength: document.getElementById("replyLengthSelect").value,
+        temperature: parseFloat(document.getElementById("tempSlider").value),
+        maxTokens: parseInt(document.getElementById("tokensSlider").value, 10),
+        contextSize: parseInt(document.getElementById("contextSlider").value, 10),
+        repPenalty: parseFloat(document.getElementById("repSlider").value),
+        apiUrl: document.getElementById("apiUrlInput").value.trim() || "https://openrouter.ai/api/v1/chat/completions",
+        model: document.getElementById("modelInput").value.trim() || "deepseek/deepseek-chat-v3-0324:free",
+        apiKey: document.getElementById("apiKeyInput").value.trim(),
+        autoMinutes: parseInt(document.getElementById("autoTimerSelect").value, 10),
+        workerUrl: document.getElementById("workerUrlInput").value.trim().replace(/\/$/, ""),
+        vapidKey: document.getElementById("vapidKeyInput").value.trim()
+      };
+      saveConfigOnly();
+      resetAutoTimer();
+      syncToWorker();
+      closeModal("settingsModal");
+    }
+
+    function exportChat() {
+      const blob = new Blob([JSON.stringify({ config, history }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `vp-net-cypher-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    }
+
+    function importChat(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (data.history) {
+            history = data.history;
+            if (data.config) {
+              config = { ...config, ...data.config };
+              saveConfigOnly();
+              updateTelemetryBar();
+            }
+            saveHistory();
+            renderChat();
+            syncToWorker();
+            alert("История и память успешно восстановлены.");
+          }
+        } catch (err) {
+          alert("Ошибка чтения файла резервной копии.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearHistory() {
+      if (confirm("Очистить переписку? Рекомендуется предварительно сделать Экспорт JSON.")) {
+        const t = getTime();
+        history = INITIAL_GREETING.map(text => ({ role: "assistant", content: text, time: t, date: getDateStr() }));
+        config.lastSummarizedCount = 0;
+        saveConfigOnly();
+        saveHistory();
+        renderChat();
+        syncToWorker();
+        closeModal("settingsModal");
+      }
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = "=".repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const rawData = atob(base64);
+      return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+    }
+
+    async function subscribePush() {
+      if (!config.workerUrl || !config.vapidKey) {
+        alert("Укажите URL Cloudflare Worker и публичный VAPID-ключ в полях выше, затем нажмите SAVE.");
+        return;
+      }
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        alert("Добавьте сайт на экран Домой через Safari (Поделиться -> На экран Домой), откройте с рабочего стола и повторите попытку.");
+        return;
+      }
+      try {
+        const reg = await navigator.serviceWorker.register("./sw.js");
+        const perm = await Notification.requestPermission();
+        if (perm !== "granted") {
+          alert("Разрешение на уведомления отклонено.");
+          return;
+        }
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(config.vapidKey)
+        });
+        await fetch(`${config.workerUrl}/subscribe`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subscription: sub, config, history })
+        });
+        alert("Push-уведомления успешно подключены.");
+      } catch (err) {
+        alert("Ошибка подключения Push: " + err.message);
+      }
+    }
+
+    async function syncToWorker() {
+      if (!config.workerUrl) return;
+      try {
+        await fetch(`${config.workerUrl}/sync`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ config, history })
+        });
+      } catch (e) {}
+    }
+
+    async function syncWithWorker() {
+      if (!config.workerUrl) return;
+      try {
+        const res = await fetch(`${config.workerUrl}/state`);
+        const data = await res.json();
+        if (data.history && data.history.length > history.length) {
+          history = data.history;
+          saveHistory();
+          renderChat();
+        }
+      } catch (e) {}
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
