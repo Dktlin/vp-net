@@ -242,30 +242,38 @@
     }
     .sugg-chips {
       display: flex;
+      flex-direction: column;
       gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-      -webkit-overflow-scrolling: touch;
+      max-height: 160px;
+      overflow-y: auto;
     }
     .sugg-chip {
       background: #141b26;
       border: 1px solid var(--border);
-      color: #cbd5e1;
+      color: #e2e8f0;
       border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 12.5px;
+      padding: 8px 12px;
+      font-size: 13px;
       cursor: pointer;
-      white-space: nowrap;
+      white-space: normal;
+      word-break: break-word;
       text-align: left;
-      flex-shrink: 0;
       transition: all 0.15s ease;
       font-family: inherit;
-      line-height: 1.3;
+      line-height: 1.35;
     }
     .sugg-chip:hover {
       background: #1e293b;
       border-color: var(--accent);
-      color: var(--text);
+      color: #fff;
+    }
+    @keyframes statePulse {
+      0% { color: #38bdf8; text-shadow: 0 0 10px rgba(56, 189, 248, 0.8); }
+      50% { color: #818cf8; text-shadow: 0 0 14px rgba(129, 140, 248, 0.9); }
+      100% { color: #94a3b8; text-shadow: none; }
+    }
+    .tele-updated {
+      animation: statePulse 1.8s ease-out;
     }
 
     /* SWIPES (JANITOR AI STYLE) */
@@ -507,6 +515,7 @@
         </div>
       </div>
       <div class="header-btns">
+        <button class="icon-btn" id="eventBtn" onclick="triggerRandomDayEvent()" title="Случайное событие в медблоке / на базе">✦ EVT</button>
         <button class="icon-btn" id="sensorBtn" onclick="triggerSensorPing()" title="Отправить сигнал с датчиков Яна">SENS</button>
         <button class="icon-btn" id="proactiveBtn" onclick="triggerProactive(false)" title="Запросить входящее СМС от Амира">SMS</button>
         <button class="icon-btn" id="noteBtn" onclick="openAuthorNoteModal()" title="Заметка сценариста (вброс ситуации)">NOTE</button>
@@ -859,6 +868,23 @@
         keys: "спать, сон, бессонница, ночь, кофе, энергетик, устал",
         content: "Режим Яна: хроническая бессонница и кошмары. Может не спать по 30–40 часов подряд, дежуря в медблоке под агрессивный русский рэп или техно."
       }
+    ];
+
+    const RANDOM_DAY_EVENTS = [
+      "Амир видит на камерах медблока: Ян сжимает в пальцах остывший чёрный кофе и неподвижно смотрит в стену",
+      "Камера наблюдения: Ян тайком выкидывает нетронутую порцию обеда в утилизатор и нервно достаёт мятную жвачку",
+      "Биосенсор Протокола: у Яна зафиксирован резкий скачок пульса до 128 уд/мин (тревожность / триггер)",
+      "Камера наблюдения: Ян сидит на полу у кушетки, нервно зашивая золотыми радиантовыми нитями рукав своего техвира",
+      "Датчик движения: в медблоке грохот — Ян случайно задел локтем лоток с хирургическими скальпелями",
+      "Терминал медблока: Ян открыл лог личных дел агентов и долго смотрит на досье Амира",
+      "Внутренняя связь базы: объявлена учебная тревога на полигоне, на этаже медблока замигали синие огни",
+      "Камера коридора: курьер базы оставил у гермодвери медблока тёплый термос с чаем и запиской от Сайфера",
+      "Биометрический трекер: температура тела Яна 35.7°C, пальцы ледяные, лёгкий тремор кистей",
+      "Камера медблока: Ян уронил голову на скрещенные руки на столе, засыпая прямо в рабочем кресле",
+      "Датчик замка: в медблок вошла Вайпер с отчётом по токсинам, Ян резко ощетинился и натянул капюшон",
+      "Камера наблюдения: Ян нашёл в кармане забытую плитку тёмного шоколада и нерешительно вертит её в руках",
+      "Терминал: Ян уже полчаса не сводит глаз с сообщения от Амира, печатает ответ и снова стирает",
+      "Биомонитор: пульс Яна замедлился до 58 bpm — он наконец провалился в глубокий сон на кушетке"
     ];
 
     const SENSOR_EVENTS = [
@@ -1491,6 +1517,41 @@
       triggerProactive(false);
     }
 
+    function extractCleanSuggestions(reply) {
+      if (!reply) return [];
+      let parts = reply.split(/###+|\n+/).map(s => s.trim()).filter(Boolean);
+      let results = [];
+
+      for (let part of parts) {
+        const qMatch = part.match(/[«"']([^»"']{3,65})[»"']/);
+        let text = qMatch ? qMatch[1] : part;
+
+        text = text.replace(/^[\d\s\.\-\*\#\:]+/, '')
+                   .replace(/^(вариант\s*\d*|дерзкий|уставший|смущённый|ответ|реплика\s*\d*)\s*[:—–\-]\s*/i, '')
+                   .replace(/^[«"']+|[»"']+$/g, '')
+                   .trim();
+
+        if (text.length >= 2 && text.length <= 75 && !text.toLowerCase().includes("ян щетинится") && !text.toLowerCase().includes("пояснение")) {
+          results.push(text);
+        }
+      }
+
+      if (results.length === 0) {
+        const allQuotes = [...reply.matchAll(/[«"']([^»"']{3,55})[»"']/g)].map(m => m[1].trim());
+        if (allQuotes.length > 0) results = allQuotes;
+      }
+
+      if (results.length === 0) {
+        results = [
+          "Ну да, конечно. Что ещё придумаешь?",
+          "Я в порядке. Хватит проверять датчики.",
+          "Ладно... Только не стой над душой."
+        ];
+      }
+
+      return results.slice(0, 3);
+    }
+
     async function requestSuggestions() {
       if (isGenerating) return;
       const diceBtn = document.getElementById("diceBtn");
@@ -1499,17 +1560,24 @@
 
       const ctxLimit = 10;
       const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      
+      const suggestSystem = "Ты — помощник сценариста. Напиши ровно 3 коротких готовых реплики Яна (до 6-8 слов) для отправки в СМС Амиру. Без рассуждений, без нумерации, без описаний. Каждая реплика с новой строки или через ###.";
+
       recent.push({
         role: "user",
-        content: "[СИСТЕМНАЯ ЗАМЕТКА: Предложи ровно 3 коротких, реалистичных варианта ответа от лица Яна на последнее СМС Амира (с учётом характера Яна: один чуть дерзкий/огрызается, один честный/уставший, один лаконичный/смущённый). Формат: верни ТОЛЬКО 3 варианта, разделяя их знаком ###, без цифр, без звёздочек, без смайликов.]"
+        content: `Предложи ровно 3 разных коротких реплики для Яна на последнее СМС Амира:
+1: чуть дерзкий / огрызается
+2: честный / уставший / покорный
+3: смущённый / неловкий
+Строго выведи только сами 3 фразы Яна через ###, БЕЗ пояснений и БЕЗ мыслей!`
       });
 
-      const reply = await callLLM(recent, null, 150);
+      const reply = await callLLM(recent, suggestSystem, 180);
       setBusyUI(false);
       if (diceBtn) diceBtn.disabled = false;
 
       if (reply) {
-        const chips = reply.split("###").map(s => s.trim().replace(/^[\d\.\-\*\"\s]+|[\"\s]+$/g, '')).filter(Boolean).slice(0, 3);
+        const chips = extractCleanSuggestions(reply);
         if (chips.length > 0) {
           showSuggestions(chips);
         }
@@ -1520,10 +1588,11 @@
       const bar = document.getElementById("suggestionBar");
       const wrap = document.getElementById("suggestionChips");
       wrap.innerHTML = "";
-      list.forEach(text => {
+      const icons = ["🔥 ", "☕ ", "💭 "];
+      list.forEach((text, i) => {
         const chip = document.createElement("button");
         chip.className = "sugg-chip";
-        chip.textContent = text;
+        chip.textContent = (icons[i] || "• ") + text;
         chip.onclick = () => applySuggestion(text);
         wrap.appendChild(chip);
       });
@@ -1781,21 +1850,32 @@ ${sliceToSummarize}`;
       return list;
     }
 
+    function flashStateUpdate() {
+      const el = document.getElementById("stateDisplay");
+      if (el) {
+        el.classList.remove("tele-updated");
+        void el.offsetWidth;
+        el.classList.add("tele-updated");
+      }
+    }
+
     async function deliverBubbles(rawReply, customAbsenceInterval = null) {
       if (!rawReply || !rawReply.trim()) return;
 
       // 1. Извлекаем теги динамической телеметрии [STATE: ...] и [LOC: ...]
+      let detectedState = null;
+      let detectedLoc = null;
       const stateMatch = rawReply.match(/\[STATE:\s*([^\]]+)\]/i);
       const locMatch = rawReply.match(/\[LOC:\s*([^\]]+)\]/i);
-      if (stateMatch) config.yanState = stateMatch[1].trim();
-      if (locMatch) config.location = locMatch[1].trim();
-      if (stateMatch || locMatch) {
-        saveConfigOnly();
-        updateTelemetryBar();
-      }
+      if (stateMatch) detectedState = stateMatch[1].trim();
+      if (locMatch) detectedLoc = locMatch[1].trim();
+
       rawReply = rawReply.replace(/\[STATE:\s*[^\]]+\]/gi, '').replace(/\[LOC:\s*[^\]]+\]/gi, '').trim();
 
-      // 2. Умное разбиение на отдельные СМС:
+      // 2. Исправляем пропущенные пробелы после знаков препинания (.Береги -> . Береги)
+      rawReply = rawReply.replace(/([.!?…])([А-ЯЁA-Z])/g, '$1 $2');
+
+      // 3. Умное разбиение на отдельные СМС:
       let rawBubbles = [];
       if (rawReply.includes("|||")) {
         rawBubbles = rawReply.split("|||");
@@ -1804,16 +1884,73 @@ ${sliceToSummarize}`;
       } else if (rawReply.includes("\n")) {
         rawBubbles = rawReply.split(/\n+/);
       } else {
-        rawBubbles = [rawReply];
+        // Если модель забыла ||| и выдала сплошной текст, разбиваем по предложениям
+        const sentences = rawReply.match(/[^.!?…]+[.!?…]+["»]?|\s*[^.!?…]+$/g) || [rawReply];
+        const grouped = [];
+        let cur = "";
+        for (let s of sentences) {
+          s = s.trim();
+          if (!s) continue;
+          if (!cur) {
+            cur = s;
+          } else if ((cur + " " + s).length <= 75) {
+            cur += " " + s;
+          } else {
+            grouped.push(cur);
+            cur = s;
+          }
+        }
+        if (cur) grouped.push(cur);
+        rawBubbles = grouped.length ? grouped : [rawReply];
       }
 
-      // Очищаем реплики от случайных звёздочек, пустых строк и лишних пробелов
-      const bubbles = rawBubbles
-        .map(s => s.replace(/\*([^\*]*)\*/g, '$1').replace(/\*/g, '').trim())
-        .filter(Boolean)
-        .slice(0, 8);
+      // 4. Очищаем реплики и дополнительно делим любые случайные длинные простыни
+      let bubbles = [];
+      for (let s of rawBubbles) {
+        let b = s.replace(/\*([^\*]*)\*/g, '$1').replace(/\*/g, '').trim();
+        if (!b) continue;
+        if (b.length > 95 && /[.!?…]\s+[А-ЯЁA-Z]/.test(b)) {
+          const parts = b.split(/(?<=[.!?…])\s+(?=[А-ЯЁA-Z])/);
+          let temp = "";
+          for (let p of parts) {
+            if (!temp) temp = p;
+            else if ((temp + " " + p).length <= 80) temp += " " + p;
+            else {
+              bubbles.push(temp.trim());
+              temp = p;
+            }
+          }
+          if (temp) bubbles.push(temp.trim());
+        } else {
+          bubbles.push(b);
+        }
+      }
+      bubbles = bubbles.filter(Boolean).slice(0, 8);
 
       if (!bubbles.length) return;
+
+      // 5. Гарантированное обновление телеметрии биометрии
+      if (detectedState) {
+        config.yanState = detectedState;
+      } else {
+        const lastUser = [...history].reverse().find(m => m.role === "user");
+        if (lastUser) {
+          const txt = lastUser.content.toLowerCase();
+          if (txt.includes("папочка") || txt.includes("не ори") || txt.includes("се норм")) {
+            config.yanState = "Пульс 98 bpm • Смущён / огрызается";
+          } else if (txt.includes("чай") || txt.includes("кофе") || txt.includes("допил")) {
+            config.yanState = "Пульс 76 bpm • Пьёт чай";
+          } else if (txt.includes("спал") || txt.includes("сон") || txt.includes("утро")) {
+            config.yanState = "Пульс 65 bpm • Отоспался";
+          } else if (txt.includes("больно") || txt.includes("кровь") || txt.includes("нити")) {
+            config.yanState = "Пульс 124 bpm • Тревожность / тахикардия";
+          }
+        }
+      }
+      if (detectedLoc) config.location = detectedLoc;
+      saveConfigOnly();
+      updateTelemetryBar();
+      flashStateUpdate();
 
       let customTimestamps = null;
       if (customAbsenceInterval && customAbsenceInterval.start && customAbsenceInterval.end) {
@@ -1959,12 +2096,12 @@ ${sliceToSummarize}`;
       const ctxLimit = Number(config.contextSize) || 35;
       const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
 
-      if (urgent) {
-        recent.push({
-          role: "user",
-          content: "[СИСТЕМНАЯ ЗАМЕТКА: Ян написал капсом или прислал срочный крик о помощи. Амир мгновенно перебивает, реагирует с острой сдержанной тревогой, короткими фразами через |||.]"
-        });
-      }
+      // Строгое напоминание формата (защита от забывания ||| и простыней):
+      const formatReminder = urgent
+        ? "[СИСТЕМНОЕ ТРЕБОВАНИЕ: Ян написал капсом или ранен! Ответь 1–2 резкими, тревожными СМС строго через ||| (до 10 слов каждое). В конце укажи: [STATE: пульс bpm • статус].]"
+        : "[СИСТЕМНОЕ ТРЕБОВАНИЕ: Ответь 2–4 отдельными короткими СМС, СТРОГО разделяя их символом ||| (каждое СМС строго до 10-12 слов). Не пиши одним сплошным куском! В самом конце ответа обязательно укажи актуальную биометрию Яна: [STATE: пульс bpm • статус].]";
+
+      recent.push({ role: "user", content: formatReminder });
 
       const reply = await callLLM(recent);
       isGenerating = false;
@@ -2118,6 +2255,39 @@ ${sliceToSummarize}`;
       }
     }
 
+    function triggerRandomDayEvent(customText = null) {
+      if (isGenerating) return;
+      const evt = customText || RANDOM_DAY_EVENTS[Math.floor(Math.random() * RANDOM_DAY_EVENTS.length)];
+      history.push({
+        role: "user",
+        content: `*${evt}*`,
+        isNarrative: true,
+        time: getTime(),
+        date: getDateStr()
+      });
+      saveHistory();
+      renderChat();
+      playChime();
+
+      isGenerating = true;
+      setBusyUI(true, "РЕАКЦИЯ НА СОБЫТИЕ...");
+      updateTelemetryBar(true);
+
+      const ctxLimit = Number(config.contextSize) || 35;
+      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      recent.push({
+        role: "user",
+        content: `[СИСТЕМНАЯ ЗАМЕТКА: На базе произошло событие: "${evt}". Напиши Яну от лица Амира (2–3 коротких СМС через |||), отреагировав по камерам или биометрии. В конце [STATE: пульс bpm • статус]. Без смайликов и звёздочек.]`
+      });
+
+      callLLM(recent).then(reply => {
+        isGenerating = false;
+        setBusyUI(false);
+        updateTelemetryBar(false);
+        if (reply) deliverBubbles(reply);
+      });
+    }
+
     async function checkIdleAndTrigger() {
       if (!config.apiKey || isGenerating || !history || !history.length) return;
       const inputEl = document.getElementById("msgInput");
@@ -2151,6 +2321,19 @@ ${sliceToSummarize}`;
           setBusyUI(false);
           updateTelemetryBar(false);
           if (reply) await deliverBubbles(reply);
+          return;
+        }
+      }
+
+      // СЦЕНАРИЙ 1.5: Случайное дневное событие базы (раз в 45–75 минут при открытом чате)
+      const hour = new Date().getHours();
+      const isDay = hour >= 9 && hour < 22;
+      if (isDay && diffMins >= 45 && diffMins < 90 && (now - lastIdlePingTime > 50 * 60 * 1000)) {
+        if (Math.random() < 0.45) {
+          lastIdlePingTime = now;
+          lastActivity = now;
+          localStorage.setItem("vp_last_activity", String(lastActivity));
+          triggerRandomDayEvent();
           return;
         }
       }
