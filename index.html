@@ -1523,29 +1523,29 @@
       let results = [];
 
       for (let part of parts) {
-        const qMatch = part.match(/[«"']([^»"']{3,65})[»"']/);
-        let text = qMatch ? qMatch[1] : part;
+        let s = part;
+        // Убираем нумерацию (1., 2.), метки (Вариант 1:, Дерзкий:)
+        s = s.replace(/^[\d\s\.\-\*\#\:]+/, '')
+             .replace(/^(вариант\s*\d*|дерзкий|азартный|уставший|смущённый|ответ|реплика\s*\d*|ян)\s*[:—–\-]\s*/i, '')
+             .replace(/^["'«]+|["'»]+$/g, '')
+             .trim();
 
-        text = text.replace(/^[\d\s\.\-\*\#\:]+/, '')
-                   .replace(/^(вариант\s*\d*|дерзкий|уставший|смущённый|ответ|реплика\s*\d*)\s*[:—–\-]\s*/i, '')
-                   .replace(/^[«"']+|[»"']+$/g, '')
-                   .trim();
+        // Отсекаем фразы Амира (обращения "доктор", "safi", "ya doctor", "Ян,")
+        const lower = s.toLowerCase();
+        if (lower.includes("доктор") || lower.includes("ya doctor") || lower.includes("safi") || lower.includes("ян,") || lower.includes("ян.") || lower.includes("мой хирург")) {
+          continue;
+        }
 
-        if (text.length >= 2 && text.length <= 75 && !text.toLowerCase().includes("ян щетинится") && !text.toLowerCase().includes("пояснение")) {
-          results.push(text);
+        if (s.length >= 2 && s.length <= 80 && !lower.includes("пояснение") && !lower.startsWith("ян:")) {
+          results.push(s);
         }
       }
 
       if (results.length === 0) {
-        const allQuotes = [...reply.matchAll(/[«"']([^»"']{3,55})[»"']/g)].map(m => m[1].trim());
-        if (allQuotes.length > 0) results = allQuotes;
-      }
-
-      if (results.length === 0) {
         results = [
-          "Ну да, конечно. Что ещё придумаешь?",
-          "Я в порядке. Хватит проверять датчики.",
-          "Ладно... Только не стой над душой."
+          "Не дождёшься. Я тебя всухую разнесу.",
+          "В шесть так в шесть. Доску готовь.",
+          "Бебебе было идеальным ответом, отвали."
         ];
       }
 
@@ -1558,21 +1558,37 @@
       if (diceBtn) diceBtn.disabled = true;
       setBusyUI(true, "ПОДБОР ИДЕЙ...");
 
-      const ctxLimit = 10;
-      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
-      
-      const suggestSystem = "Ты — помощник сценариста. Напиши ровно 3 коротких готовых реплики Яна (до 6-8 слов) для отправки в СМС Амиру. Без рассуждений, без нумерации, без описаний. Каждая реплика с новой строки или через ###.";
+      // Форматируем последние сообщения в чистый текстовый диалог (Ян / Амир):
+      const lastMsgs = history.slice(-6).map(m => `${m.role === 'user' ? 'Ян' : 'Амир'}: "${m.content}"`).join("\n");
 
-      recent.push({
-        role: "user",
-        content: `Предложи ровно 3 разных коротких реплики для Яна на последнее СМС Амира:
-1: чуть дерзкий / огрызается
-2: честный / уставший / покорный
-3: смущённый / неловкий
-Строго выведи только сами 3 фразы Яна через ###, БЕЗ пояснений и БЕЗ мыслей!`
-      });
+      const suggestSystem = `Ты — помощник сценариста ролевого чата. Твоя задача: придумать ровно 3 варианта реплики ИСКЛЮЧИТЕЛЬНО для ЯНА (19-летний хирург Протокола VALORANT) в ответ на последние сообщения Амира (Cypher, 39 лет).
 
-      const reply = await callLLM(recent, suggestSystem, 180);
+ХАРАКТЕР ЯНА:
+- 19 лет, полевой хирург с ПРЛ.
+- Колючий, дерзкий, моментально огрызается при смущении или когда Амир опекает его. Любит спорить и защищаться сарказмом.
+- Привязан к Амиру, но ни за что не покажет слабость в лоб.
+- Стиль речи: короткие хлесткие СМС (от 2 до 8 слов). Например: «Не дождёшься», «Сам ты...», «В шесть так в шесть. Доску готовь», «Отвали, Амир», «Я занят вообще-то».
+
+КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО писать от лица Амира!
+КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать обращения Амира («доктор», «safi», «ya doctor»)!
+КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО писать рассуждения, мысли или пояснения!
+Выведи ТОЛЬКО 3 готовые фразы Яна, разделяя их строго символом ###.`;
+
+      const payload = [
+        {
+          role: "user",
+          content: `Контекст переписки:
+${lastMsgs}
+
+Напиши ровно 3 РАЗНЫХ варианта СМС, которые ЯН может отправить Амиру прямо сейчас:
+1: дерзкий сарказм / огрызается
+2: азартный вызов (на шахматы или текущую тему)
+3: смущённый / короткий бурчащий
+Выведи только 3 фразы Яна через ###:`
+        }
+      ];
+
+      const reply = await callLLM(payload, suggestSystem, 180);
       setBusyUI(false);
       if (diceBtn) diceBtn.disabled = false;
 
@@ -1588,7 +1604,7 @@
       const bar = document.getElementById("suggestionBar");
       const wrap = document.getElementById("suggestionChips");
       wrap.innerHTML = "";
-      const icons = ["🔥 ", "☕ ", "💭 "];
+      const icons = ["🔥 ", "⚡ ", "💭 "];
       list.forEach((text, i) => {
         const chip = document.createElement("button");
         chip.className = "sugg-chip";
