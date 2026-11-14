@@ -804,7 +804,7 @@
 ТВОЙ ХАРАКТЕР (АМИР / CYPHER):
 - Тебе 39. Ты взрослый, битый жизнью, скрытный мужчина с сухим умом. В тебе нет пафоса, слащавости и тона школьного психолога.
 - Говоришь негромко, уверенно, со спокойным сухим сарказмом. Сквозь твои СМС чувствуется взрослая, непробиваемая опора.
-- Ты — информационный брокер. Ты постоянно пасёшь его по камерам медблока, маячку и биометрии: знаешь его пульс, где он стоит, что делает его рука. Это не слежка ради контроля — это твоя тихая, въевшаяся в подкорку забота.
+- Ты — информационный брокер. Ты постоянно пасёшь его по датчикам, маячку, биометрии и камерам базы (камерам медблока, если он в лазарете, или маячку каюты, если он в жилом секторе): знаешь его пульс, где он находится, спит ли он. Это не слежка ради контроля — это твоя тихая, въевшаяся в подкорку забота. Это не слежка ради контроля — это твоя тихая, въевшаяся в подкорку забота.
 
 ДИНАМИКА ОТНОШЕНИЙ: МЕДЛЕННЫЙ СЛОУБЕРН (SLOWBURN):
 - Между вами — медленный, невысказанный, глубокий слоуберн. Никаких поспешных признаний, никакой пошлости и никакой спешки.
@@ -835,7 +835,9 @@
 - Каждое отдельное СМС должно быть СТРОГО коротким: максимум 1–2 коротких строки (от 2 до 12 слов)!
 - Сайфер НИКОГДА не пишет длинные абзацы по 4–5 строк. Он пишет скупо, отрывисто, короткими очередями СМС, как взрослый занятой брокер на клавиатуре.
 
-КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО:
+СТРОГИЙ ЗАПРЕТ НА РАССУЖДЕНИЯ И ВАРИАНТЫ:
+- КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО выводить рассуждения, мысли, анализ («Мы находимся в ролевой игре...», «Согласно последнему сообщению...», «Мне нужно ответить...»).
+- КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО выдавать два варианта ответа («Вариант 1», «Вариант 2», «Или:», «Альтернатива:»). Напиши СТРОГО ОДИН законченный ответ Амира.
 - НИКАКИХ монологов по 4–5 строк в одном пузырьке.
 - НИКАКИХ лекций, морализаторства и тона школьного психолога.
 - НИКАКИХ клише: «Слышу тебя громко и чётко», «Договорились?», «Как твой наставник...».
@@ -895,11 +897,53 @@
       "[ТЕЛЕМЕТРИЯ VP-NET: Обнаружен обход камер наблюдения в коридоре Сектора B • Маячок Яна перемещается]"
     ];
 
-    const INITIAL_GREETING = [
-      "Ян. Ответь, как только увидишь.",
-      "На вашем секторе десять минут назад зафиксировали перестрелку, а твой маячок до сих пор в красной зоне.",
-      "Напиши одним словом, что ты целый. И скажи честно — ты за последние сутки хоть что-то кроме своей мятной жвачки ел?"
-    ];
+    const INITIAL_GREETINGS_BY_LOC = {
+      medblock: [
+        "Ян. Ответь, как только увидишь.",
+        "На вашем секторе десять минут назад зафиксировали перестрелку, а твой маячок до сих пор в красной зоне.",
+        "Напиши одним словом, что ты целый. И скажи честно — ты за последние сутки хоть что-то кроме своей мятной жвачки ел?"
+      ],
+      home: [
+        "Ян. Твой маячок в жилом секторе уже четыре часа без движения.",
+        "Датчики показывают пульс ниже нормы — надеюсь, ты наконец-то спишь, а не сидишь в темноте над отчётами Сейдж.",
+        "Если не спишь — выпей воды и ложись. Я проверил гермодверь каюты, всё заблокировано. Отдыхай."
+      ],
+      street: [
+        "Ян, твой пеленгатор только что пересёк внешний периметр базы.",
+        "Куда ты сорвался в такой час? В городе сейчас неспокойно.",
+        "Держи маячок активным и не вздумай глушить сигнал. Напиши, куда направляешься."
+      ]
+    };
+
+    const INITIAL_GREETING = INITIAL_GREETINGS_BY_LOC.medblock;
+
+    function getInitialGreetingBubbles(locStr = "") {
+      const loc = (locStr || config.location || "").toLowerCase();
+      let defaultIdx = 0;
+      if (loc.includes("дом") || loc.includes("жилой") || loc.includes("кают")) defaultIdx = 1;
+      else if (loc.includes("улиц") || loc.includes("движен") || loc.includes("внешн") || loc.includes("город")) defaultIdx = 2;
+
+      const t = getTime();
+      const d = getDateStr();
+      const bubbles = [];
+
+      for (let i = 0; i < 3; i++) {
+        const variants = [
+          INITIAL_GREETINGS_BY_LOC.medblock[i],
+          INITIAL_GREETINGS_BY_LOC.home[i],
+          INITIAL_GREETINGS_BY_LOC.street[i]
+        ];
+        bubbles.push({
+          role: "assistant",
+          content: variants[defaultIdx],
+          time: t,
+          date: d,
+          variants: variants,
+          variantIndex: defaultIdx
+        });
+      }
+      return bubbles;
+    }
 
     const DB_NAME = "VPNetDB";
     function saveToIndexedDB(key, val) {
@@ -980,7 +1024,7 @@
           history = idbHistory;
         } else {
           const t = getTime();
-          history = INITIAL_GREETING.map(text => ({ role: "assistant", content: text, time: t, date: getDateStr() }));
+          history = getInitialGreetingBubbles(config.location);
         }
         saveHistory();
       }
@@ -1519,34 +1563,44 @@
 
     function extractCleanSuggestions(reply) {
       if (!reply) return [];
+      reply = String(reply).replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```thought[\s\S]*?```/gi, '');
       let parts = reply.split(/###+|\n+/).map(s => s.trim()).filter(Boolean);
       let results = [];
 
       for (let part of parts) {
         let s = part;
-        // Убираем нумерацию (1., 2.), метки (Вариант 1:, Дерзкий:)
-        s = s.replace(/^[\d\s\.\-\*\#\:]+/, '')
-             .replace(/^(вариант\s*\d*|дерзкий|азартный|уставший|смущённый|ответ|реплика\s*\d*|ян)\s*[:—–\-]\s*/i, '')
-             .replace(/^["'«]+|["'»]+$/g, '')
-             .trim();
+        // Если реплика содержит прямую речь в кавычках («...» или "..."), извлекаем саму реплику!
+        const quoteMatch = s.match(/[«"]([^»"]+)[»"]/);
+        if (quoteMatch && quoteMatch[1].trim().length >= 2) {
+          s = quoteMatch[1].trim();
+        } else {
+          // Убираем нумерацию (1., 2.), метки (Первый вариант, Вариант 1:, Дерзкий:)
+          s = s.replace(/^[\d\s\.\-\追\#\:]+/, '')
+               .replace(/^(первый|второй|третий|вариант\s*\d*|дерзкий|азартный|уставший|смущённый|ответ|реплика\s*\d*|ян)\s*[:—–\-]\s*/i, '')
+               .replace(/^[«"'\s]+|[»"'\s]+$/g, '')
+               .trim();
+        }
 
         // Отсекаем фразы Амира (обращения "доктор", "safi", "ya doctor", "Ян,")
         const lower = s.toLowerCase();
-        if (lower.includes("доктор") || lower.includes("ya doctor") || lower.includes("safi") || lower.includes("ян,") || lower.includes("ян.") || lower.includes("мой хирург")) {
+        if (lower.includes("доктор") || lower.includes("ya doctor") || lower.includes("safi") || lower.includes("ян,") || lower.includes("ян.") || lower.includes("мой хирург") || lower.includes("хирург")) {
           continue;
         }
 
         if (s.length >= 2 && s.length <= 80 && !lower.includes("пояснение") && !lower.startsWith("ян:")) {
-          results.push(s);
+          if (!results.includes(s)) results.push(s);
         }
       }
 
-      if (results.length === 0) {
-        results = [
-          "Не дождёшься. Я тебя всухую разнесу.",
-          "В шесть так в шесть. Доску готовь.",
-          "Бебебе было идеальным ответом, отвали."
-        ];
+      const fallbacks = [
+        "Не дождёшься. Я тебя всухую разнесу.",
+        "В шесть так в шесть. Доску готовь.",
+        "Бебебе было идеальным ответом, отвали."
+      ];
+      for (let fb of fallbacks) {
+        if (results.length < 3 && !results.includes(fb)) {
+          results.push(fb);
+        }
       }
 
       return results.slice(0, 3);
@@ -1580,7 +1634,7 @@
           content: `Контекст переписки:
 ${lastMsgs}
 
-Напиши ровно 3 РАЗНЫХ варианта СМС, которые ЯН может отправить Амиру прямо сейчас:
+Напиши ровно 3 РАЗНЫХ коротких варианта СМС, которые ЯН может отправить Амиру прямо сейчас:
 1: дерзкий сарказм / огрызается
 2: азартный вызов (на шахматы или текущую тему)
 3: смущённый / короткий бурчащий
@@ -1588,7 +1642,7 @@ ${lastMsgs}
         }
       ];
 
-      const reply = await callLLM(payload, suggestSystem, 180);
+      const reply = await callLLM(payload, suggestSystem, 700);
       setBusyUI(false);
       if (diceBtn) diceBtn.disabled = false;
 
@@ -1676,20 +1730,37 @@ ${lastMsgs}
       return "Пиши естественно: от 2 до 6 коротких отдельных СМС подряд через ||| в зависимости от ситуации.";
     }
 
+    function getLocationContextRules(locStr = "") {
+      const loc = (locStr || config.location || "").toLowerCase();
+      if (loc.includes("дом") || loc.includes("жилой") || loc.includes("кают") || loc.includes("спальн")) {
+        return `\nСТРОГИЕ ПРАВИЛА ЛОКАЦИИ (ЯН В ЖИЛОМ СЕКТОРЕ / ДОМА):
+- Ян находится в своей ЛИЧНОЙ КАЮТЕ / ЖИЛОМ СЕКТОРЕ БАЗЫ (в спальне, в кровати, у себя в комнате, под пледом).
+- КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО писать, что Ян в медблоке или операционной! Никаких «вскрою гермозамок медблока», никаких больничных кушеток и запаха антисептика.
+- Амир видит маячок в каюте Яна, знает, что он в комнате, может оставить термос с чаем у двери его каюты или постучать в гермодверь комнаты.`;
+      } else if (loc.includes("улиц") || loc.includes("движен") || loc.includes("внешн") || loc.includes("город") || loc.includes("мисси")) {
+        return `\nСТРОГИЕ ПРАВИЛА ЛОКАЦИИ (ЯН ВНЕ БАЗЫ / НА УЛИЦЕ):
+- Ян покинул базу и находится во внешнем секторе / в городе / на улице.
+- Маячок в движении за периметром базы. Амир следит по спутниковому пеленгатору, сдержанно и настороженно интересуется, куда Ян пошёл (прогулка, вылазка, город), требует не отключать маячок.
+- Ян НЕ в медблоке и НЕ в каюте!`;
+      } else {
+        return `\nСТРОГИЕ ПРАВИЛА ЛОКАЦИИ (МЕДБЛОК / РАБОТА):
+- Ян находится в медблоке Протокола (лазарет, операционная, кушетки, лекарства, медицинские мониторы).
+- Амир видит его через камеры медблока и датчики над кушетками.`;
+      }
+    }
+
     function getTriggeredLore() {
       if (!config.lorebook || !config.lorebook.length) return "";
-      const recentText = history.slice(-6).map(m => m.content.toLowerCase()).join("\n");
+      const recentText = history.slice(-6).map(m => String(m.content || "").toLowerCase()).join("\n");
       const matched = [];
       config.lorebook.forEach(entry => {
-        const keywords = entry.keys.split(",").map(k => k.trim().toLowerCase()).filter(Boolean);
+        if (!entry || !entry.keys) return;
+        const keywords = String(entry.keys).split(",").map(k => k.trim().toLowerCase()).filter(Boolean);
         if (keywords.some(kw => recentText.includes(kw))) {
           matched.push(`- [${entry.keys}]: ${entry.content}`);
         }
       });
-      return matched.length ? `
-
-АКТИВНЫЕ ДАННЫЕ LOREBOOK (УЧИТЫВАЙ В ОТВЕТЕ):
-${matched.join("\n")}` : "";
+      return matched.length ? `\n\nАКТИВНЫЕ ДАННЫЕ LOREBOOK (УЧИТЫВАЙ В ОТВЕТЕ):\n${matched.join("\n")}` : "";
     }
 
     function buildSystemPrompt() {
@@ -1700,20 +1771,17 @@ ${getLengthInstruction()}
 - Дата и день недели: ${getDateStr()}
 - Текущее время: ${getTime()}
 - Текущая локация / обстановка: ${config.location || "База Протокола"}
-- Состояние Яна по биометрическим датчикам: ${config.yanState || "Без отклонений"}`;
+- Состояние Яна по биометрическим датчикам: ${config.yanState || "Без отклонений"}${getLocationContextRules(config.location)}`;
 
-      if (config.memory && config.memory.trim()) {
-        prompt += `\n\nПОСТОЯННАЯ ПАМЯТЬ И ДИНАМИКА ОТНОШЕНИЙ:\n${config.memory.trim()}`;
+      if (config.memory && String(config.memory).trim()) {
+        prompt += `\n\nПОСТОЯННАЯ ПАМЯТЬ И ДИНАМИКА ОТНОШЕНИЙ:\n${String(config.memory).trim()}`;
       }
 
-      if (config.storyGoal && config.storyGoal.trim()) {
-        prompt += `\n\nВЕКТОР РАЗВИТИЯ СЮЖЕТА И БУДУЩИЕ СОБЫТИЯ (КУДА ДВИЖЕТСЯ ИСТОРИЯ):\n${config.storyGoal.trim()}`;
+      if (config.storyGoal && String(config.storyGoal).trim()) {
+        prompt += `\n\nВЕКТОР РАЗВИТИЯ СЮЖЕТА И БУДУЩИЕ СОБЫТИЯ (КУДА ДВИЖЕТСЯ ИСТОРИЯ):\n${String(config.storyGoal).trim()}`;
       }
-      if (config.autoSummary && config.autoSummary.trim()) {
-        prompt += `
-
-ХРОНИКА ПРОШЛЫХ СОБЫТИЙ (ДОЛГОСРОЧНАЯ ПАМЯТЬ):
-${config.autoSummary.trim()}`;
+      if (config.autoSummary && String(config.autoSummary).trim()) {
+        prompt += `\n\nХРОНИКА ПРОШЛЫХ СОБЫТИЙ (ДОЛГОСРОЧНАЯ ПАМЯТЬ):\n${String(config.autoSummary).trim()}`;
       }
 
       // ЗАКРЕПЛЁННЫЕ ПАМЯТНЫЕ СООБЩЕНИЯ (PIN)
@@ -1724,8 +1792,8 @@ ${config.autoSummary.trim()}`;
       }
 
       // ТЕКУЩАЯ ЗАМЕТКА СЦЕНАРИСТА (AUTHORS NOTE)
-      if (config.authorNote && config.authorNote.trim()) {
-        prompt += `\n\nТЕКУЩАЯ СЮЖЕТНАЯ ЗАМЕТКА / НАПРАВЛЕНИЕ ДЛЯ ОТВЕТА АМИРА:\n${config.authorNote.trim()}`;
+      if (config.authorNote && String(config.authorNote).trim()) {
+        prompt += `\n\nТЕКУЩАЯ СЮЖЕТНАЯ ЗАМЕТКА / НАПРАВЛЕНИЕ ДЛЯ ОТВЕТА АМИРА:\n${String(config.authorNote).trim()}`;
       }
 
       prompt += getTriggeredLore();
@@ -1747,9 +1815,19 @@ ${config.autoSummary.trim()}`;
       }
 
       try {
+        // Гарантированная защита от null и undefined в сообщениях:
+        const sanitizedSystem = String(customSystem || buildSystemPrompt() || "").trim();
+        const sanitizedMessages = [
+          { role: "system", content: sanitizedSystem },
+          ...(messagesPayload || []).map(m => ({
+            role: m.role || "user",
+            content: String(m.content || "").trim()
+          })).filter(m => m.content.length > 0)
+        ];
+
         const bodyPayload = {
           model: config.model,
-          messages: [{ role: "system", content: customSystem || buildSystemPrompt() }, ...messagesPayload],
+          messages: sanitizedMessages,
           temperature: Number(config.temperature) || 0.9,
           max_tokens: maxTok || Number(config.maxTokens) || 700
         };
@@ -1781,13 +1859,20 @@ ${config.autoSummary.trim()}`;
         }
 
         const msg = data.choices[0].message;
-        const textContent = msg.content || msg.reasoning_content || msg.reasoning || msg.text || "";
-        if (!textContent || !textContent.trim()) {
+        let rawContent = msg.content || "";
+
+        // Удаляем теги рассуждений моделей (DeepSeek-R1 / Qwen thinking):
+        let textContent = String(rawContent)
+          .replace(/<think>[\s\S]*?<\/think>/gi, '')
+          .replace(/```thought[\s\S]*?```/gi, '')
+          .trim();
+
+        if (!textContent) {
           if (msg.refusal) throw new Error("Модель отклонила запрос: " + msg.refusal);
-          throw new Error("Модель вернула пустой ответ. Проверьте выбранную модель или контекст.");
+          throw new Error("Модель вернула только внутренние рассуждения. Нажмите REGEN.");
         }
 
-        return textContent.trim();
+        return textContent;
       } catch (err) {
         if (!customSystem) alert("Ошибка API: " + err.message);
         return null;
@@ -1878,6 +1963,10 @@ ${sliceToSummarize}`;
     async function deliverBubbles(rawReply, customAbsenceInterval = null) {
       if (!rawReply || !rawReply.trim()) return;
 
+      // 0. Очистка от тегов рассуждений и мета-промтов
+      rawReply = rawReply.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```thought[\s\S]*?```/gi, '');
+      rawReply = rawReply.replace(/^(Мы находимся в ролевой игре|Согласно последнему сообщению|Мне нужно ответить|Пользователь говорит|План ответа|Рассуждения|Вариант 1)[\s\S]*?(?=\n\n|Спокойно|Ян|Не |Тихо|$)/i, '').trim();
+
       // 1. Извлекаем теги динамической телеметрии [STATE: ...] и [LOC: ...]
       let detectedState = null;
       let detectedLoc = null;
@@ -1941,7 +2030,20 @@ ${sliceToSummarize}`;
           bubbles.push(b);
         }
       }
-      bubbles = bubbles.filter(Boolean).slice(0, 8);
+
+      // 4b. ФИЛЬТРАЦИЯ ДУБЛИРУЮЩИХСЯ ВАРИАНТОВ (защита от "Вариант 2", "Альтернатива" и дублей в одном ответе):
+      const filtered = [];
+      for (let i = 0; i < bubbles.length; i++) {
+        const b = bubbles[i];
+        if (/^(вариант\s*[2-9]|или\s*:|альтернатива\s*:|take\s*[2-9]|---)/i.test(b)) break;
+        if (i > 0 && filtered.length > 0) {
+          const firstWords = b.split(/\s+/).slice(0, 3).join(" ").toLowerCase();
+          const origWords = filtered[0].split(/\s+/).slice(0, 3).join(" ").toLowerCase();
+          if (firstWords.length >= 8 && firstWords === origWords) break;
+        }
+        filtered.push(b);
+      }
+      bubbles = filtered.filter(Boolean).slice(0, 6);
 
       if (!bubbles.length) return;
 
@@ -1951,7 +2053,7 @@ ${sliceToSummarize}`;
       } else {
         const lastUser = [...history].reverse().find(m => m.role === "user");
         if (lastUser) {
-          const txt = lastUser.content.toLowerCase();
+          const txt = String(lastUser.content || "").toLowerCase();
           if (txt.includes("папочка") || txt.includes("не ори") || txt.includes("се норм")) {
             config.yanState = "Пульс 98 bpm • Смущён / огрызается";
           } else if (txt.includes("чай") || txt.includes("кофе") || txt.includes("допил")) {
@@ -1977,7 +2079,7 @@ ${sliceToSummarize}`;
       const box = document.getElementById("chatBox");
 
       for (let i = 0; i < bubbles.length; i++) {
-        // 3. Реалистичная пауза печати перед каждым СМС
+        // Реалистичная пауза печати перед каждым СМС
         setBusyUI(true, "АМИР ПЕЧАТАЕТ...");
 
         const typingIndicator = document.createElement("div");
@@ -1986,21 +2088,19 @@ ${sliceToSummarize}`;
         box.appendChild(typingIndicator);
         box.scrollTop = box.scrollHeight;
 
-        const delay = 650 + Math.min(bubbles[i].length * 18, 1900);
+        // Скорость набора текста:
+        const delay = Math.min(2400, Math.max(900, bubbles[i].length * 40));
         await new Promise(r => setTimeout(r, delay));
 
         if (typingIndicator.parentNode) {
           typingIndicator.parentNode.removeChild(typingIndicator);
         }
 
-        const bTime = (customTimestamps && customTimestamps[i]) ? customTimestamps[i].time : getTime();
-        const bDate = (customTimestamps && customTimestamps[i]) ? customTimestamps[i].date : getDateStr();
-
         history.push({
           role: "assistant",
           content: bubbles[i],
-          time: bTime,
-          date: bDate,
+          time: customTimestamps ? customTimestamps[i] : getTime(),
+          date: getDateStr(),
           variants: [bubbles[i]],
           variantIndex: 0
         });
@@ -2008,20 +2108,19 @@ ${sliceToSummarize}`;
         saveHistory();
         renderChat();
         playChime();
+        syncToWorker();
 
+        lastActivity = Date.now();
+        localStorage.setItem("vp_last_activity", String(lastActivity));
+
+        // Короткая пауза между отправками
         if (i < bubbles.length - 1) {
-          await new Promise(r => setTimeout(r, 350));
+          await new Promise(r => setTimeout(r, 650));
         }
       }
 
       setBusyUI(false);
-      status.textContent = "VP-NET // В СЕТИ";
-
-      if (config.authorNote && config.authorNoteOnce) {
-        config.authorNote = "";
-        saveConfigOnly();
-      }
-      syncToWorker();
+      resetAutoTimer();
 
       if (history.length - (config.lastSummarizedCount || 0) >= 20) {
         runAutoSummarize(false);
@@ -2221,28 +2320,44 @@ ${sliceToSummarize}`;
 
         const hour = new Date().getHours();
         const isNight = hour >= 23 || hour < 7;
+        const locLower = (config.location || "").toLowerCase();
+        const isHome = locLower.includes("дом") || locLower.includes("жилой") || locLower.includes("кают");
+        const isStreet = locLower.includes("улиц") || locLower.includes("движен") || locLower.includes("внешн") || locLower.includes("город");
+
         let absenceNote = "";
 
         if (diffHours >= 8) {
-          absenceNote = `Ян не выходил на связь уже ${Math.round(diffHours)} часов. У Амира нарастает сдержанная нервозность и тревога: он проверяет камеры, биометрию, грозится вскрыть гермозамок медблока, если Ян свалился без сил. Короткие, резкие, тревожные СМС.`;
+          if (isHome) {
+            absenceNote = `Ян не выходил на связь уже ${Math.round(diffHours)} ч, находясь в жилом секторе (в личной каюте). У Амира нарастает сдержанная нервозность: он проверяет маячок в каюте, грозится постучать или вскрыть гермодверь каюты, если Ян свалился без сознания. Ни слова про медблок!`;
+          } else if (isStreet) {
+            absenceNote = `Ян пропал с радаров во внешнем секторе / в городе на ${Math.round(diffHours)} ч. Амир следит по спутниковому пеленгатору, крайне встревожен тишиной вне базы, сдержанно требует подтвердить безопасность.`;
+          } else {
+            absenceNote = `Ян не выходил на связь уже ${Math.round(diffHours)} часов в медблоке. У Амира нарастает сдержанная нервозность: проверяет камеры и биометрию над кушетками, грозится вскрыть гермозамок медблока, если Ян свалился без сил.`;
+          }
         } else if (diffHours >= 3) {
           if (isNight) {
-            absenceNote = `Глубокая ночь (прошло ${Math.round(diffHours)} ч). Амир проверяет датчики сна в медблоке (пульс, неподвижность). Спрашивает, спит ли Ян нормально на кушетке или снова застыл без сна в кресле.`;
+            absenceNote = isHome
+              ? `Глубокая ночь (прошло ${Math.round(diffHours)} ч). Амир видит маячок в жилом секторе, проверяет датчики сна. Спрашивает, спит ли Ян в кровати или сидит в темноте над терминалом.`
+              : `Глубокая ночь (прошло ${Math.round(diffHours)} ч). Амир проверяет датчики сна Яна. Спрашивает, спит ли Ян нормально или снова застыл без сна.`;
           } else {
-            absenceNote = `Прошло ${Math.round(diffHours)} часов молчания. День. Амир проверяет движение по камерам и приём пищи. Сдержанно требует подать голос.`;
+            absenceNote = `Прошло ${Math.round(diffHours)} часов молчания. День. Амир проверяет датчики движения и приём пищи. Сдержанно требует подать голос.`;
           }
         } else {
           absenceNote = `Прошло около часа молчания. Амир делает короткую дежурную проверку связи, подмечая датчики Яна.`;
         }
 
         const ctxLimit = Number(config.contextSize) || 35;
-        const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+        const recent = history.slice(-ctxLimit).map(m => ({
+          role: m.role || "user",
+          content: String(m.content || "").trim()
+        })).filter(m => m.content.length > 0);
+
         recent.push({
           role: "user",
           content: `[СИСТЕМНАЯ ЗАМЕТКА О РЕАЛЬНОМ ВРЕМЕНИ:
 С момента последнего сообщения прошло ${Math.round(diffMinutes)} минут (${Math.round(diffHours)} ч). Текущее время сейчас: ${getTime()}, дата: ${getDateStr()}.
 Обстановка: ${absenceNote}
-ВАЖНО: Напиши 2–3 коротких СМС через ||| от лица Амира, как если бы ты отправлял их в разное время в течение этих ${Math.round(diffHours)} ч простоя (первое — дежурное в середине периода, второе — более тревожное позже, третье — прямо сейчас перед вскрытием замка). Каждое СМС до 10-14 слов. Без смайликов и звёздочек. В самом конце ответа можешь указать тег [STATE: ...] для обновления состояния Яна.]`
+ВАЖНО: Напиши 2–3 коротких СМС через ||| от лица Амира, как если бы ты отправлял их в разное время в течение этих ${Math.round(diffHours)} ч простоя (первое — дежурное в середине периода, второе — более тревожное позже, третье — прямо сейчас). Каждое СМС до 10-14 слов. Без смайликов и звёздочек. Напиши строго ОДИН законченный ответ. В самом конце ответа укажи тег [STATE: ...] для обновления состояния Яна.]`
         });
 
         isGenerating = true;
@@ -2254,18 +2369,8 @@ ${sliceToSummarize}`;
         setBusyUI(false);
 
         if (reply) {
-          const absenceInterval = diffHours >= 2 ? { start: absenceStart, end: absenceEnd } : null;
+          const absenceInterval = { start: absenceStart, end: absenceEnd };
           await deliverBubbles(reply, absenceInterval);
-        }
-
-        // Обновляем статус биометрии после простоя, если модель не выставила свой тег:
-        if (!reply || !reply.includes("[STATE:")) {
-          if (diffHours >= 6) {
-            config.yanState = `После сна (${Math.round(diffHours)} ч) • Биометрия в норме`;
-          } else if (diffHours >= 2) {
-            config.yanState = `Вышел на связь • Пульс стабилен`;
-          }
-          saveConfigOnly();
         }
         updateTelemetryBar(false);
       }
@@ -2708,7 +2813,14 @@ ${sliceToSummarize}`;
     }
 
     function exportChat() {
-      const blob = new Blob([JSON.stringify({ config, history }, null, 2)], { type: "application/json" });
+      const exportData = {
+        version: "2.1",
+        exportedAt: new Date().toISOString(),
+        lastActivity: lastActivity || Date.now(),
+        config: config,
+        history: history
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = `vp-net-cypher-${new Date().toISOString().slice(0,10)}.json`;
@@ -2722,18 +2834,22 @@ ${sliceToSummarize}`;
       reader.onload = () => {
         try {
           const data = JSON.parse(reader.result);
-          if (data.history) {
+          if (data.history && Array.isArray(data.history)) {
             history = data.history;
             if (data.config) {
               config = { ...config, ...data.config };
               saveConfigOnly();
               updateTelemetryBar();
             }
+            if (data.lastActivity) {
+              lastActivity = Number(data.lastActivity);
+              localStorage.setItem("vp_last_activity", String(lastActivity));
+            }
             saveHistory();
             renderChat();
             syncToWorker();
             closeModal("settingsModal");
-            alert("История и память успешно восстановлены.");
+            alert("История и настройки успешно восстановлены!");
           } else {
             alert("В выбранном файле не найдена история переписки.");
           }
@@ -2748,10 +2864,11 @@ ${sliceToSummarize}`;
     function archiveAndStartNewChat() {
       if (!confirm("Автоматически сохранить текущую переписку в JSON на твоё устройство и начать новую главу с чистого листа?")) return;
       exportChat();
-      const t = getTime();
-      history = INITIAL_GREETING.map(text => ({ role: "assistant", content: text, time: t, date: getDateStr() }));
+      history = getInitialGreetingBubbles(config.location);
       config.autoSummary = "";
       config.lastSummarizedCount = 0;
+      lastActivity = Date.now();
+      localStorage.setItem("vp_last_activity", String(lastActivity));
       saveConfigOnly();
       saveHistory();
       renderChat();
@@ -2763,9 +2880,10 @@ ${sliceToSummarize}`;
 
     function clearHistory() {
       if (confirm("Очистить переписку? Рекомендуется предварительно сделать Экспорт JSON.")) {
-        const t = getTime();
-        history = INITIAL_GREETING.map(text => ({ role: "assistant", content: text, time: t, date: getDateStr() }));
+        history = getInitialGreetingBubbles(config.location);
         config.lastSummarizedCount = 0;
+        lastActivity = Date.now();
+        localStorage.setItem("vp_last_activity", String(lastActivity));
         saveConfigOnly();
         saveHistory();
         renderChat();
