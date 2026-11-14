@@ -841,7 +841,17 @@
 - НИКАКИХ монологов по 4–5 строк в одном пузырьке.
 - НИКАКИХ лекций, морализаторства и тона школьного психолога.
 - НИКАКИХ клише: «Слышу тебя громко и чётко», «Договорились?», «Как твой наставник...».
-- НИКАКИХ смайликов, эмодзи и описаний действий от третьего лица.
+- НИКАКИХ смайликов и эмодзи.
+
+СЮЖЕТНЫЕ ДЕЙСТВИЯ МЕЖДУ СМС (НАРРАТИВНЫЕ ПЛАШКИ):
+- Внутри самих СМС ты пишешь строго от первого лица без звёздочек.
+- НО между отдельными СМС (через |||) ты можешь вставить отдельную реплику сюжетного действия в звёздочках `*действие*`:
+  *глухой стук костяшек пальцев по гермодвери каюты*
+  *на мониторе наблюдения: пульс Яна подскакивает до 118 bpm*
+  *шаги за дверью каюты затихают*
+  В чате это отобразится отдельной стильной плашкой происходящего события между СМС!
+  Пример:
+  Ян. Открой дверь. Я слышу твои шаги.|||*глухой стук костяшек пальцев по гермодвери каюты*|||Либо ты сам открываешь, либо я достаю ключ-карту.
 
 СЛУЖЕБНЫЕ ТЕГИ ТЕЛЕМЕТРИИ (ДЛЯ ВЕРХНЕГО ДАШБОРДА):
 Если состояние Яна или его локация изменились (он поспал, сообщил что проснулся, устал, выпил кофе, пульс восстановился, ушёл в жилой сектор или медблок) — ты можешь в самом конце ответа добавить служебные теги:
@@ -1506,18 +1516,23 @@
       setBusyUI(true, "ПРОДОЛЖЕНИЕ...");
 
       const ctxLimit = Number(config.contextSize) || 35;
-      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      const recent = history.slice(-ctxLimit).map(m => ({
+        role: m.role || "user",
+        content: String(m.content || "").trim()
+      })).filter(m => m.content.length > 0);
       recent.push({
         role: "user",
         content: "[СИСТЕМНАЯ ЗАМЕТКА: Продолжи мысль Амира. Напиши ещё 1-3 коротких СМС через |||, развивая разговор или добавляя новую мысль, без смайликов и звёздочек.]"
       });
 
-      const reply = await callLLM(recent);
-      isGenerating = false;
-      setBusyUI(false);
-
-      if (reply) {
-        await deliverBubbles(reply);
+      try {
+        const reply = await callLLM(recent);
+        if (reply) {
+          await deliverBubbles(reply);
+        }
+      } finally {
+        isGenerating = false;
+        setBusyUI(false);
       }
     }
 
@@ -1693,13 +1708,19 @@ ${lastMsgs}
       isGenerating = true;
       setBusyUI(true, "ПЕРЕГЕНЕРАЦИЯ...");
       const ctxLimit = Number(config.contextSize) || 35;
-      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
-      const reply = await callLLM(recent);
-      isGenerating = false;
-      setBusyUI(false);
+      const recent = history.slice(-ctxLimit).map(m => ({
+        role: m.role || "user",
+        content: String(m.content || "").trim()
+      })).filter(m => m.content.length > 0);
 
-      if (reply) {
-        await deliverBubbles(reply);
+      try {
+        const reply = await callLLM(recent);
+        if (reply) {
+          await deliverBubbles(reply);
+        }
+      } finally {
+        isGenerating = false;
+        setBusyUI(false);
       }
     }
 
@@ -1962,168 +1983,209 @@ ${sliceToSummarize}`;
 
     async function deliverBubbles(rawReply, customAbsenceInterval = null) {
       if (!rawReply || !rawReply.trim()) return;
+      isGenerating = true;
 
-      // 0. Очистка от тегов рассуждений и мета-промтов
-      rawReply = rawReply.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```thought[\s\S]*?```/gi, '');
-      rawReply = rawReply.replace(/^(Мы находимся в ролевой игре|Согласно последнему сообщению|Мне нужно ответить|Пользователь говорит|План ответа|Рассуждения|Вариант 1)[\s\S]*?(?=\n\n|Спокойно|Ян|Не |Тихо|$)/i, '').trim();
+      try {
+        // 0. Очистка от тегов рассуждений и мета-промтов
+        rawReply = rawReply.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```thought[\s\S]*?```/gi, '');
+        rawReply = rawReply.replace(/^(Мы находимся в ролевой игре|Согласно последнему сообщению|Мне нужно ответить|Пользователь говорит|План ответа|Рассуждения|Вариант 1)[\s\S]*?(?=\n\n|Спокойно|Ян|Не |Тихо|$)/i, '').trim();
 
-      // 1. Извлекаем теги динамической телеметрии [STATE: ...] и [LOC: ...]
-      let detectedState = null;
-      let detectedLoc = null;
-      const stateMatch = rawReply.match(/\[STATE:\s*([^\]]+)\]/i);
-      const locMatch = rawReply.match(/\[LOC:\s*([^\]]+)\]/i);
-      if (stateMatch) detectedState = stateMatch[1].trim();
-      if (locMatch) detectedLoc = locMatch[1].trim();
+        // 1. Извлекаем теги динамической телеметрии [STATE: ...] и [LOC: ...]
+        let detectedState = null;
+        let detectedLoc = null;
+        const stateMatch = rawReply.match(/\[STATE:\s*([^\]]+)\]/i);
+        const locMatch = rawReply.match(/\[LOC:\s*([^\]]+)\]/i);
+        if (stateMatch) detectedState = stateMatch[1].trim();
+        if (locMatch) detectedLoc = locMatch[1].trim();
 
-      rawReply = rawReply.replace(/\[STATE:\s*[^\]]+\]/gi, '').replace(/\[LOC:\s*[^\]]+\]/gi, '').trim();
+        rawReply = rawReply.replace(/\[STATE:\s*[^\]]+\]/gi, '').replace(/\[LOC:\s*[^\]]+\]/gi, '').trim();
 
-      // 2. Исправляем пропущенные пробелы после знаков препинания (.Береги -> . Береги)
-      rawReply = rawReply.replace(/([.!?…])([А-ЯЁA-Z])/g, '$1 $2');
+        // 2. Исправляем пропущенные пробелы после знаков препинания (.Береги -> . Береги)
+        rawReply = rawReply.replace(/([.!?…])([А-ЯЁA-Z])/g, '$1 $2');
 
-      // 3. Умное разбиение на отдельные СМС:
-      let rawBubbles = [];
-      if (rawReply.includes("|||")) {
-        rawBubbles = rawReply.split("|||");
-      } else if (rawReply.includes("\n\n")) {
-        rawBubbles = rawReply.split(/\n\s*\n+/);
-      } else if (rawReply.includes("\n")) {
-        rawBubbles = rawReply.split(/\n+/);
-      } else {
-        // Если модель забыла ||| и выдала сплошной текст, разбиваем по предложениям
-        const sentences = rawReply.match(/[^.!?…]+[.!?…]+["»]?|\s*[^.!?…]+$/g) || [rawReply];
-        const grouped = [];
-        let cur = "";
-        for (let s of sentences) {
-          s = s.trim();
-          if (!s) continue;
-          if (!cur) {
-            cur = s;
-          } else if ((cur + " " + s).length <= 75) {
-            cur += " " + s;
-          } else {
-            grouped.push(cur);
-            cur = s;
-          }
-        }
-        if (cur) grouped.push(cur);
-        rawBubbles = grouped.length ? grouped : [rawReply];
-      }
-
-      // 4. Очищаем реплики и дополнительно делим любые случайные длинные простыни
-      let bubbles = [];
-      for (let s of rawBubbles) {
-        let b = s.replace(/\*([^\*]*)\*/g, '$1').replace(/\*/g, '').trim();
-        if (!b) continue;
-        if (b.length > 95 && /[.!?…]\s+[А-ЯЁA-Z]/.test(b)) {
-          const parts = b.split(/(?<=[.!?…])\s+(?=[А-ЯЁA-Z])/);
-          let temp = "";
-          for (let p of parts) {
-            if (!temp) temp = p;
-            else if ((temp + " " + p).length <= 80) temp += " " + p;
-            else {
-              bubbles.push(temp.trim());
-              temp = p;
+        // 3. Умное разбиение на отдельные СМС:
+        let rawBubbles = [];
+        if (rawReply.includes("|||")) {
+          rawBubbles = rawReply.split("|||");
+        } else if (rawReply.includes("\n\n")) {
+          rawBubbles = rawReply.split(/\n\s*\n+/);
+        } else if (rawReply.includes("\n")) {
+          rawBubbles = rawReply.split(/\n+/);
+        } else {
+          const sentences = rawReply.match(/[^.!?…]+[.!?…]+["»]?|\s*[^.!?…]+$/g) || [rawReply];
+          const grouped = [];
+          let cur = "";
+          for (let s of sentences) {
+            s = s.trim();
+            if (!s) continue;
+            if (!cur) {
+              cur = s;
+            } else if ((cur + " " + s).length <= 75) {
+              cur += " " + s;
+            } else {
+              grouped.push(cur);
+              cur = s;
             }
           }
-          if (temp) bubbles.push(temp.trim());
-        } else {
-          bubbles.push(b);
+          if (cur) grouped.push(cur);
+          rawBubbles = grouped.length ? grouped : [rawReply];
         }
-      }
 
-      // 4b. ФИЛЬТРАЦИЯ ДУБЛИРУЮЩИХСЯ ВАРИАНТОВ (защита от "Вариант 2", "Альтернатива" и дублей в одном ответе):
-      const filtered = [];
-      for (let i = 0; i < bubbles.length; i++) {
-        const b = bubbles[i];
-        if (/^(вариант\s*[2-9]|или\s*:|альтернатива\s*:|take\s*[2-9]|---)/i.test(b)) break;
-        if (i > 0 && filtered.length > 0) {
-          const firstWords = b.split(/\s+/).slice(0, 3).join(" ").toLowerCase();
-          const origWords = filtered[0].split(/\s+/).slice(0, 3).join(" ").toLowerCase();
-          if (firstWords.length >= 8 && firstWords === origWords) break;
-        }
-        filtered.push(b);
-      }
-      bubbles = filtered.filter(Boolean).slice(0, 6);
+        // 4. Очищаем реплики и определяем нарративные действия (*...* или [...]):
+        let bubbles = [];
+        for (let s of rawBubbles) {
+          s = s.trim();
+          if (!s) continue;
 
-      if (!bubbles.length) return;
+          // Проверяем, является ли это нарративным действием (*...* или [...])
+          const isNar = (s.startsWith("*") && s.endsWith("*")) || (s.startsWith("[") && s.endsWith("]"));
+          if (isNar) {
+            const cleanNar = s.replace(/^[\*\[]+|[\*\]]+$/g, '').trim();
+            if (cleanNar) {
+              bubbles.push({ text: cleanNar, isNarrative: true });
+            }
+            continue;
+          }
 
-      // 5. Гарантированное обновление телеметрии биометрии
-      if (detectedState) {
-        config.yanState = detectedState;
-      } else {
-        const lastUser = [...history].reverse().find(m => m.role === "user");
-        if (lastUser) {
-          const txt = String(lastUser.content || "").toLowerCase();
-          if (txt.includes("папочка") || txt.includes("не ори") || txt.includes("се норм")) {
-            config.yanState = "Пульс 98 bpm • Смущён / огрызается";
-          } else if (txt.includes("чай") || txt.includes("кофе") || txt.includes("допил")) {
-            config.yanState = "Пульс 76 bpm • Пьёт чай";
-          } else if (txt.includes("спал") || txt.includes("сон") || txt.includes("утро")) {
-            config.yanState = "Пульс 65 bpm • Отоспался";
-          } else if (txt.includes("больно") || txt.includes("кровь") || txt.includes("нити")) {
-            config.yanState = "Пульс 124 bpm • Тревожность / тахикардия";
+          // Обычное СМС: убираем случайные одиночные звёздочки внутри речи
+          let b = s.replace(/\*([^\*]*)\*/g, '$1').replace(/\*/g, '').trim();
+          if (!b) continue;
+
+          if (b.length > 95 && /[.!?…]\s+[А-ЯЁA-Z]/.test(b)) {
+            const parts = b.split(/(?<=[.!?…])\s+(?=[А-ЯЁA-Z])/);
+            let temp = "";
+            for (let p of parts) {
+              if (!temp) temp = p;
+              else if ((temp + " " + p).length <= 80) temp += " " + p;
+              else {
+                bubbles.push({ text: temp.trim(), isNarrative: false });
+                temp = p;
+              }
+            }
+            if (temp) bubbles.push({ text: temp.trim(), isNarrative: false });
+          } else {
+            bubbles.push({ text: b, isNarrative: false });
           }
         }
-      }
-      if (detectedLoc) config.location = detectedLoc;
-      saveConfigOnly();
-      updateTelemetryBar();
-      flashStateUpdate();
 
-      let customTimestamps = null;
-      if (customAbsenceInterval && customAbsenceInterval.start && customAbsenceInterval.end) {
-        customTimestamps = generateAbsenceTimestamps(customAbsenceInterval.start, customAbsenceInterval.end, bubbles.length);
-      }
+        // 4b. ФИЛЬТРАЦИЯ ДУБЛИРУЮЩИХСЯ ВАРИАНТОВ (защита от "Вариант 2", "Альтернатива" и дублей):
+        const filtered = [];
+        for (let i = 0; i < bubbles.length; i++) {
+          const item = bubbles[i];
+          if (!item.isNarrative && /^(вариант\s*[2-9]|или\s*:|альтернатива\s*:|take\s*[2-9]|---)/i.test(item.text)) break;
+          if (i > 0 && filtered.length > 0 && !item.isNarrative) {
+            const firstWords = item.text.split(/\s+/).slice(0, 3).join(" ").toLowerCase();
+            const origWords = filtered[0].text.split(/\s+/).slice(0, 3).join(" ").toLowerCase();
+            if (firstWords.length >= 8 && firstWords === origWords) break;
+          }
+          filtered.push(item);
+        }
+        bubbles = filtered.slice(0, 7);
 
-      const status = document.getElementById("statusText");
-      const box = document.getElementById("chatBox");
+        if (!bubbles.length) return;
 
-      for (let i = 0; i < bubbles.length; i++) {
-        // Реалистичная пауза печати перед каждым СМС
-        setBusyUI(true, "АМИР ПЕЧАТАЕТ...");
+        // 5. Гарантированное обновление телеметрии биометрии
+        if (detectedState) {
+          config.yanState = detectedState;
+        } else {
+          const lastUser = [...history].reverse().find(m => m.role === "user");
+          if (lastUser) {
+            const txt = String(lastUser.content || "").toLowerCase();
+            if (txt.includes("папочка") || txt.includes("не ори") || txt.includes("се норм")) {
+              config.yanState = "Пульс 98 bpm • Смущён / огрызается";
+            } else if (txt.includes("чай") || txt.includes("кофе") || txt.includes("допил")) {
+              config.yanState = "Пульс 76 bpm • Пьёт чай";
+            } else if (txt.includes("спал") || txt.includes("сон") || txt.includes("утро")) {
+              config.yanState = "Пульс 65 bpm • Отоспался";
+            } else if (txt.includes("больно") || txt.includes("кровь") || txt.includes("нити")) {
+              config.yanState = "Пульс 124 bpm • Тревожность / тахикардия";
+            }
+          }
+        }
+        if (detectedLoc) config.location = detectedLoc;
+        saveConfigOnly();
+        updateTelemetryBar();
+        flashStateUpdate();
 
-        const typingIndicator = document.createElement("div");
-        typingIndicator.className = "msg-wrap aamir typing-wrap";
-        typingIndicator.innerHTML = '<div class="msg typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
-        box.appendChild(typingIndicator);
-        box.scrollTop = box.scrollHeight;
-
-        // Скорость набора текста:
-        const delay = Math.min(2400, Math.max(900, bubbles[i].length * 40));
-        await new Promise(r => setTimeout(r, delay));
-
-        if (typingIndicator.parentNode) {
-          typingIndicator.parentNode.removeChild(typingIndicator);
+        let customTimestamps = null;
+        if (customAbsenceInterval && customAbsenceInterval.start && customAbsenceInterval.end) {
+          customTimestamps = generateAbsenceTimestamps(customAbsenceInterval.start, customAbsenceInterval.end, bubbles.length);
         }
 
-        history.push({
-          role: "assistant",
-          content: bubbles[i],
-          time: customTimestamps ? customTimestamps[i] : getTime(),
-          date: getDateStr(),
-          variants: [bubbles[i]],
-          variantIndex: 0
-        });
+        const box = document.getElementById("chatBox");
 
-        saveHistory();
-        renderChat();
-        playChime();
-        syncToWorker();
+        for (let i = 0; i < bubbles.length; i++) {
+          const item = bubbles[i];
 
-        lastActivity = Date.now();
-        localStorage.setItem("vp_last_activity", String(lastActivity));
+          // Проверка на точный дубликат последнего сообщения в чате (защита от повтора):
+          const lastAssistant = [...history].reverse().find(m => m.role === "assistant" && !m.isNarrative);
+          if (lastAssistant && !item.isNarrative && lastAssistant.content.trim().toLowerCase() === item.text.trim().toLowerCase()) {
+            continue;
+          }
 
-        // Короткая пауза между отправками
-        if (i < bubbles.length - 1) {
-          await new Promise(r => setTimeout(r, 650));
+          if (item.isNarrative) {
+            // Нарративное действие между СМС: короткая пауза и отображение действия
+            await new Promise(r => setTimeout(r, 450));
+            history.push({
+              role: "assistant",
+              content: item.text,
+              isNarrative: true,
+              time: customTimestamps ? customTimestamps[i] : getTime(),
+              date: getDateStr()
+            });
+            saveHistory();
+            renderChat();
+            syncToWorker();
+            continue;
+          }
+
+          // Обычное СМС Амира
+          setBusyUI(true, "АМИР ПЕЧАТАЕТ...");
+
+          const typingIndicator = document.createElement("div");
+          typingIndicator.className = "msg-wrap aamir typing-wrap";
+          typingIndicator.innerHTML = '<div class="msg typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
+          box.appendChild(typingIndicator);
+          box.scrollTop = box.scrollHeight;
+
+          const delay = Math.min(2400, Math.max(900, item.text.length * 40));
+          await new Promise(r => setTimeout(r, delay));
+
+          if (typingIndicator.parentNode) {
+            typingIndicator.parentNode.removeChild(typingIndicator);
+          }
+
+          history.push({
+            role: "assistant",
+            content: item.text,
+            isNarrative: false,
+            time: customTimestamps ? customTimestamps[i] : getTime(),
+            date: getDateStr(),
+            variants: [item.text],
+            variantIndex: 0
+          });
+
+          saveHistory();
+          renderChat();
+          playChime();
+          syncToWorker();
+
+          lastActivity = Date.now();
+          localStorage.setItem("vp_last_activity", String(lastActivity));
+
+          if (i < bubbles.length - 1) {
+            await new Promise(r => setTimeout(r, 650));
+          }
         }
-      }
 
-      setBusyUI(false);
-      resetAutoTimer();
+        resetAutoTimer();
 
-      if (history.length - (config.lastSummarizedCount || 0) >= 20) {
-        runAutoSummarize(false);
+        if (history.length - (config.lastSummarizedCount || 0) >= 20) {
+          runAutoSummarize(false);
+        }
+      } finally {
+        isGenerating = false;
+        setBusyUI(false);
       }
     }
 
@@ -2197,6 +2259,11 @@ ${sliceToSummarize}`;
     async function triggerAmirReply(urgent = false) {
       if (isGenerating) return;
 
+      if (pendingReplyTimer) {
+        clearTimeout(pendingReplyTimer);
+        pendingReplyTimer = null;
+      }
+
       // Если Ян прямо сейчас печатает следующее сообщение — подождём ещё немного
       const input = document.getElementById("msgInput");
       if (input && input.value.trim().length > 0 && !urgent) {
@@ -2209,21 +2276,26 @@ ${sliceToSummarize}`;
       setBusyUI(true, urgent ? "ТРЕВОГА // АМИР ОТВЕЧАЕТ..." : "АМИР ПЕЧАТАЕТ...");
 
       const ctxLimit = Number(config.contextSize) || 35;
-      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      const recent = history.slice(-ctxLimit).map(m => ({
+        role: m.role || "user",
+        content: String(m.content || "").trim()
+      })).filter(m => m.content.length > 0);
 
       // Строгое напоминание формата (защита от забывания ||| и простыней):
       const formatReminder = urgent
         ? "[СИСТЕМНОЕ ТРЕБОВАНИЕ: Ян написал капсом или ранен! Ответь 1–2 резкими, тревожными СМС строго через ||| (до 10 слов каждое). В конце укажи: [STATE: пульс bpm • статус].]"
-        : "[СИСТЕМНОЕ ТРЕБОВАНИЕ: Ответь 2–4 отдельными короткими СМС, СТРОГО разделяя их символом ||| (каждое СМС строго до 10-12 слов). Не пиши одним сплошным куском! В самом конце ответа обязательно укажи актуальную биометрию Яна: [STATE: пульс bpm • статус].]";
+        : "[СИСТЕМНОЕ ТРЕБОВАНИЕ: Ответь 2–4 отдельными короткими СМС, СТРОГО разделяя их символом ||| (каждое СМС строго до 10-12 слов). При необходимости между СМС можно вставить действие в звёздочках: *действие*. Не пиши одним сплошным куском! В самом конце ответа обязательно укажи актуальную биометрию Яна: [STATE: пульс bpm • статус].]";
 
       recent.push({ role: "user", content: formatReminder });
 
-      const reply = await callLLM(recent);
-      isGenerating = false;
-      setBusyUI(false);
-
-      if (reply) {
-        await deliverBubbles(reply);
+      try {
+        const reply = await callLLM(recent);
+        if (reply) {
+          await deliverBubbles(reply);
+        }
+      } finally {
+        isGenerating = false;
+        setBusyUI(false);
       }
     }
 
@@ -2232,34 +2304,50 @@ ${sliceToSummarize}`;
       const input = document.getElementById("msgInput");
       if (input && input.value.trim().length > 0) return;
 
+      if (pendingReplyTimer) {
+        clearTimeout(pendingReplyTimer);
+        pendingReplyTimer = null;
+      }
+
       isGenerating = true;
       setBusyUI(true, "АМИР ПЕЧАТАЕТ...");
 
       const ctxLimit = Number(config.contextSize) || 35;
-      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+      const recent = history.slice(-ctxLimit).map(m => ({
+        role: m.role || "user",
+        content: String(m.content || "").trim()
+      })).filter(m => m.content.length > 0);
+
       recent.push({
         role: "user",
         content: "[СИСТЕМНАЯ ЗАМЕТКА: Терминал показал Амиру, что Ян только что долго печатал сообщение, а потом всё стёр и замолчал. Отреагируй на это от лица Амира: 1–2 коротких СМС через ||| (спроси, что он удалил, или скажи говорить прямо).]"
       });
 
-      const reply = await callLLM(recent);
-      isGenerating = false;
-      setBusyUI(false);
-
-      if (reply) {
-        await deliverBubbles(reply);
+      try {
+        const reply = await callLLM(recent);
+        if (reply) {
+          await deliverBubbles(reply);
+        }
+      } finally {
+        isGenerating = false;
+        setBusyUI(false);
       }
     }
 
     async function triggerSensorPing() {
       if (isGenerating) return;
-      const randomAlert = SENSOR_EVENTS[Math.floor(Math.random() * SENSOR_EVENTS.length)];
+      if (pendingReplyTimer) {
+        clearTimeout(pendingReplyTimer);
+        pendingReplyTimer = null;
+      }
+
+      const note = `[БИОМЕТРИЧЕСКАЯ ТРЕВОГА: На терминал Амира поступил сигнал с датчиков импланта Яна. Состояние: ${config.yanState || "Резкий скачок пульса до 125 bpm, тремор пальцев"}. Отреагируй короткими тревожными СМС через ||| (потребуй сесть на кушетку или выпить воды).]`;
       history.push({
-        role: "assistant",
-        content: randomAlert,
+        role: "user",
+        content: `*Датчик импланта зафиксировал скачок: ${config.yanState}*`,
+        isNarrative: true,
         time: getTime(),
-        date: getDateStr(),
-        isSensor: true
+        date: getDateStr()
       });
       saveHistory();
       renderChat();
@@ -2267,40 +2355,21 @@ ${sliceToSummarize}`;
 
       isGenerating = true;
       setBusyUI(true, "РЕАКЦИЯ НА ДАТЧИК...");
-      const ctxLimit = Number(config.contextSize) || 35;
-      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
-      recent.push({
-        role: "user",
-        content: "[СИСТЕМНАЯ ЗАМЕТКА: Только что сработал датчик телеметрии Яна. Сразу напиши Яну от лица Амира (через |||), отреагировав на это показание датчика. Без смайликов и звёздочек.]"
-      });
-      const reply = await callLLM(recent);
-      isGenerating = false;
-      setBusyUI(false);
-
-      if (reply) await deliverBubbles(reply);
-    }
-
-    async function triggerProactive(fromAbsence = false) {
-      if (isGenerating) return;
-      isGenerating = true;
-      setBusyUI(true, "ВХОДЯЩЕЕ...");
 
       const ctxLimit = Number(config.contextSize) || 35;
-      const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
-      const note = fromAbsence
-        ? "[СИСТЕМНАЯ ЗАМЕТКА: Ян долго не заходил в сеть и не отвечал. Напиши ему первым от лица Амира (разделяя СМС через |||) с учетом текущего времени, даты, локации, состояния датчиков и ваших отношений. Без смайликов и звёздочек.]"
-        : "[СИСТЕМНАЯ ЗАМЕТКА: Напиши Яну первым от лица Амира (разделяя СМС через |||) — прояви заботу, проверь состояние, еду или прокомментируй обстановку в текущей локации. Без смайликов и звёздочек.]";
-
+      const recent = history.slice(-ctxLimit).map(m => ({
+        role: m.role || "user",
+        content: String(m.content || "").trim()
+      })).filter(m => m.content.length > 0);
       recent.push({ role: "user", content: note });
-      const reply = await callLLM(recent);
 
-      isGenerating = false;
-      setBusyUI(false);
-
-      if (reply) {
-        await deliverBubbles(reply);
+      try {
+        const reply = await callLLM(recent);
+        if (reply) await deliverBubbles(reply);
+      } finally {
+        isGenerating = false;
+        setBusyUI(false);
       }
-      resetAutoTimer();
     }
 
     async function checkAbsenceCatchUp() {
@@ -2364,15 +2433,17 @@ ${sliceToSummarize}`;
         setBusyUI(true, "ВХОДЯЩЕЕ...");
         updateTelemetryBar(true);
 
-        const reply = await callLLM(recent);
-        isGenerating = false;
-        setBusyUI(false);
-
-        if (reply) {
-          const absenceInterval = { start: absenceStart, end: absenceEnd };
-          await deliverBubbles(reply, absenceInterval);
+        try {
+          const reply = await callLLM(recent);
+          if (reply) {
+            const absenceInterval = { start: absenceStart, end: absenceEnd };
+            await deliverBubbles(reply, absenceInterval);
+          }
+        } finally {
+          isGenerating = false;
+          setBusyUI(false);
+          updateTelemetryBar(false);
         }
-        updateTelemetryBar(false);
       }
     }
 
@@ -2401,11 +2472,14 @@ ${sliceToSummarize}`;
         content: `[СИСТЕМНАЯ ЗАМЕТКА: На базе произошло событие: "${evt}". Напиши Яну от лица Амира (2–3 коротких СМС через |||), отреагировав по камерам или биометрии. В конце [STATE: пульс bpm • статус]. Без смайликов и звёздочек.]`
       });
 
-      callLLM(recent).then(reply => {
-        isGenerating = false;
-        setBusyUI(false);
-        updateTelemetryBar(false);
-        if (reply) deliverBubbles(reply);
+      callLLM(recent).then(async reply => {
+        try {
+          if (reply) await deliverBubbles(reply);
+        } finally {
+          isGenerating = false;
+          setBusyUI(false);
+          updateTelemetryBar(false);
+        }
       });
     }
 
@@ -2437,11 +2511,14 @@ ${sliceToSummarize}`;
             content: `[СИСТЕМНАЯ ЗАМЕТКА: Ян не отвечает на твоё последнее сообщение уже ${Math.round(diffMins)} минут, хотя терминал связи активен. Напиши 1 короткое СМС через ||| от лица Амира: проворчи сдержанно в своём стиле (спроси, почему он игнорирует, куда уставился или напомни о вопросе). До 10-12 слов. Без смайликов и звёздочек.]`
           });
 
-          const reply = await callLLM(recent);
-          isGenerating = false;
-          setBusyUI(false);
-          updateTelemetryBar(false);
-          if (reply) await deliverBubbles(reply);
+          try {
+            const reply = await callLLM(recent);
+            if (reply) await deliverBubbles(reply);
+          } finally {
+            isGenerating = false;
+            setBusyUI(false);
+            updateTelemetryBar(false);
+          }
           return;
         }
       }
