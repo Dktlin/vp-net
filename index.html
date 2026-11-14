@@ -58,6 +58,17 @@
       cursor: pointer;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       flex-shrink: 0;
+      transition: border-color 0.3s ease, background 0.3s ease;
+    }
+    .telemetry-bar.scanning {
+      background: linear-gradient(90deg, #0b0f16 0%, #162438 50%, #0b0f16 100%);
+      background-size: 200% 100%;
+      animation: scanGlow 1.8s infinite linear;
+      border-bottom-color: var(--accent);
+    }
+    @keyframes scanGlow {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
     .tele-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .tele-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -536,16 +547,50 @@
   <!-- МОДАЛЬНОЕ ОКНО: БЫСТРЫЙ СТАТУС И ЛОКАЦИЯ -->
   <div class="modal" id="quickStatusModal">
     <div class="modal-box">
-      <h3>VP-NET // Текущая сводка</h3>
+      <h3>VP-NET // Текущая сводка и GPS</h3>
       <div class="field">
-        <label>Локация / обстановка</label>
+        <label>Локация / сектор (ручной ввод или авто-GPS)</label>
         <input type="text" id="quickLocInput" placeholder="База Протокола, медблок" />
       </div>
       <div class="field">
-        <label>Физическое и ментальное состояние Яна (видит Амир по датчикам)</label>
+        <label>Физическое и ментальное состояние Яна (датчики импланта)</label>
         <input type="text" id="quickStateInput" placeholder="Не спал 28ч, пьёт только кофе, раздражён" />
       </div>
-      <div class="modal-actions">
+
+      <!-- БЛОК РЕАЛЬНОГО GPS-ПЕЛЕНГАТОРА -->
+      <div class="field" style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <label style="margin:0; font-weight:700; color:var(--accent); font-size:12px;">🛰️ GPS-ПЕЛЕНГАТОР ЯНА (РЕАЛЬНАЯ ГЕОЛОКАЦИЯ)</label>
+          <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; cursor:pointer;">
+            <input type="checkbox" id="gpsToggle" onchange="toggleGPS(this.checked)" />
+            ВКЛ. GPS
+          </label>
+        </div>
+        
+        <div style="background:#090d14; border:1px solid #1f293d; border-radius:8px; padding:10px; font-size:11px; font-family:ui-monospace, monospace;">
+          <div id="gpsCurrentCoords" style="color:#94a3b8; margin-bottom:5px;">📡 Статус: GPS не запущен</div>
+          <div id="gpsCurrentZone" style="color:#38bdf8; font-weight:600; margin-bottom:8px;">📍 Определённый сектор: —</div>
+          
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#121a28; padding:5px 8px; border-radius:6px;">
+              <span id="gpsHomeLabel" style="font-size:11px;">🏠 ДОМ: не задан</span>
+              <button type="button" class="btn-sec" style="padding:3px 8px; font-size:10px;" onclick="saveCurrentCoordsAs('home')">Запомнить здесь</button>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; background:#121a28; padding:5px 8px; border-radius:6px;">
+              <span id="gpsWorkLabel" style="font-size:11px;">🏥 РАБОТА: не задан</span>
+              <button type="button" class="btn-sec" style="padding:3px 8px; font-size:10px;" onclick="saveCurrentCoordsAs('work')">Запомнить здесь</button>
+            </div>
+          </div>
+          
+          <div class="hint" style="margin-top:8px; font-size:10.5px; line-height:1.35; color:#64748b;">
+            • В радиусе 250м от Дома → «База Протокола • Жилой сектор (Дом)»<br>
+            • В радиусе 350м от Работы → «База Протокола • Медблок (Работа)»<br>
+            • В остальных местах → «Внешний сектор • В движении (Улица)»
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:12px;">
         <button class="btn-sec" onclick="closeModal('quickStatusModal')">Отмена</button>
         <button class="send-btn" onclick="saveQuickStatus()">APPLY</button>
       </div>
@@ -787,10 +832,16 @@
 - НИКАКИХ клише: «Слышу тебя громко и чётко», «Договорились?», «Как твой наставник...».
 - НИКАКИХ смайликов, эмодзи и описаний действий от третьего лица.
 
+СЛУЖЕБНЫЕ ТЕГИ ТЕЛЕМЕТРИИ (ДЛЯ ВЕРХНЕГО ДАШБОРДА):
+Если состояние Яна или его локация изменились (он поспал, сообщил что проснулся, устал, выпил кофе, пульс восстановился, ушёл в жилой сектор или медблок) — ты можешь в самом конце ответа добавить служебные теги:
+[STATE: краткий статус, например "Отоспался 13ч • Пульс 68 bpm" или "Тахикардия • Без сна 20ч" или "Пьёт кофе • Пульс в норме"]
+[LOC: сектор базы или города, например "База Протокола • Медблок" или "База Протокола • Жилой сектор (Дом)"]
+Эти теги обновят верхнюю строку дашборда и будут автоматически скрыты из пузырьков чата.
+
 ФОРМАТ ВЫДАЧИ — СТРОГО ЧЕРЕЗ СИМВОЛ |||:
 Разбивай ответ на 2–4 коротких отдельных СМС (пузырьков), разделяя их строго символом |||
 ПРИМЕР:
-Не ори. В ушах звенит.|||Не хочешь есть — не надо. Я не заставляю, доктор.|||Просто сядь на кушетку, safi? Две минуты.`;
+Не ори. В ушах звенит.|||Не хочешь есть — не надо. Я не заставляю, доктор.|||Просто сядь на кушетку, safi? Две минуты.|||[STATE: Пульс 98 bpm • Раздражён]`;
 
     const DEFAULT_LOREBOOK = [
       {
@@ -872,10 +923,16 @@
       apiKey: "",
       autoMinutes: 0,
       workerUrl: "",
-      vapidKey: ""
+      vapidKey: "",
+      gpsEnabled: false,
+      homeCoords: null,
+      workCoords: null
     };
 
     if (!config.lorebook) config.lorebook = DEFAULT_LOREBOOK;
+    if (config.gpsEnabled === undefined) config.gpsEnabled = false;
+    if (config.homeCoords === undefined) config.homeCoords = null;
+    if (config.workCoords === undefined) config.workCoords = null;
 
     let lastActivity = parseInt(localStorage.getItem("vp_last_activity") || String(Date.now()), 10);
     let isGenerating = false;
@@ -886,6 +943,9 @@
     let userTypingTimer = null;
     let erasedTypingTimer = null;
     let maxTypedLength = 0;
+
+    let lastIdlePingTime = 0;
+    let lastGrumbleTargetIndex = -1;
 
     async function initApp() {
       if (!history) {
@@ -902,14 +962,22 @@
       renderChat();
       resetAutoTimer();
       syncWithWorker();
-      if (!config.apiKey) openSettings();
+      if (config.gpsEnabled) {
+        startGPS();
+      }
+      if (!config.apiKey) {
+        openSettings();
+      } else {
+        setTimeout(checkAbsenceCatchUp, 1500);
+      }
+      setInterval(checkIdleAndTrigger, 60 * 1000);
     }
 
-    function getTime() {
-      return new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    function getTime(d = new Date()) {
+      return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
     }
-    function getDateStr() {
-      return new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+    function getDateStr(d = new Date()) {
+      return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
     }
 
     function saveHistory() {
@@ -925,9 +993,20 @@
       saveToIndexedDB("config", config);
     }
 
-    function updateTelemetryBar() {
-      document.getElementById("locationDisplay").textContent = `LOC // ${config.location || "Не задано"}`;
-      document.getElementById("stateDisplay").textContent = `STATE // ${config.yanState || "Стандартные показатели"}`;
+    function updateTelemetryBar(isScanning = false) {
+      const bar = document.querySelector(".telemetry-bar");
+      if (bar) {
+        if (isScanning) bar.classList.add("scanning");
+        else bar.classList.remove("scanning");
+      }
+      const locEl = document.getElementById("locationDisplay");
+      const stateEl = document.getElementById("stateDisplay");
+      if (locEl) {
+        locEl.textContent = isScanning ? "LOC // ⟳ СКАНИРОВАНИЕ СЕКТОРА..." : `LOC // ${config.location || "Не задано"}`;
+      }
+      if (stateEl) {
+        stateEl.textContent = isScanning ? "STATE // ⟳ СЧИТЫВАНИЕ БИОМЕТРИИ..." : `STATE // ${config.yanState || "Стандартные показатели"}`;
+      }
       const ctxLimit = Number(config.contextSize) || 35;
       const total = history ? history.length : 0;
       const pinnedCount = history ? history.filter(m => m.pinned).length : 0;
@@ -1616,7 +1695,14 @@ ${config.autoSummary.trim()}`;
           throw new Error("Не удалось получить ответ модели: " + JSON.stringify(data));
         }
 
-        return data.choices[0].message.content.trim();
+        const msg = data.choices[0].message;
+        const textContent = msg.content || msg.reasoning_content || msg.reasoning || msg.text || "";
+        if (!textContent || !textContent.trim()) {
+          if (msg.refusal) throw new Error("Модель отклонила запрос: " + msg.refusal);
+          throw new Error("Модель вернула пустой ответ. Проверьте выбранную модель или контекст.");
+        }
+
+        return textContent.trim();
       } catch (err) {
         if (!customSystem) alert("Ошибка API: " + err.message);
         return null;
@@ -1659,10 +1745,57 @@ ${sliceToSummarize}`;
       status.textContent = "VP-NET // В СЕТИ";
     }
 
-    async function deliverBubbles(rawReply) {
+    function generateAbsenceTimestamps(startTime, endTime, count) {
+      if (count <= 0) return [];
+      if (count === 1) {
+        const d = new Date(endTime - 2 * 60 * 1000);
+        return [{ time: getTime(d), date: getDateStr(d) }];
+      }
+      const diff = endTime - startTime;
+      const list = [];
+      if (count === 2) {
+        const d1 = new Date(startTime + diff * 0.60);
+        const d2 = new Date(endTime - 2 * 60 * 1000);
+        list.push({ time: getTime(d1), date: getDateStr(d1) });
+        list.push({ time: getTime(d2), date: getDateStr(d2) });
+      } else if (count === 3) {
+        const d1 = new Date(startTime + diff * 0.42);
+        const d2 = new Date(startTime + diff * 0.82);
+        const d3 = new Date(endTime - 2 * 60 * 1000);
+        list.push({ time: getTime(d1), date: getDateStr(d1) });
+        list.push({ time: getTime(d2), date: getDateStr(d2) });
+        list.push({ time: getTime(d3), date: getDateStr(d3) });
+      } else {
+        for (let i = 0; i < count; i++) {
+          let frac;
+          if (i === count - 1) {
+            frac = 1.0;
+          } else {
+            frac = 0.35 + (0.55 * (i / (count - 1)));
+          }
+          const t = i === count - 1 ? (endTime - 2 * 60 * 1000) : (startTime + diff * frac);
+          const d = new Date(t);
+          list.push({ time: getTime(d), date: getDateStr(d) });
+        }
+      }
+      return list;
+    }
+
+    async function deliverBubbles(rawReply, customAbsenceInterval = null) {
       if (!rawReply || !rawReply.trim()) return;
 
-      // 1. Умное разбиение на отдельные СМС:
+      // 1. Извлекаем теги динамической телеметрии [STATE: ...] и [LOC: ...]
+      const stateMatch = rawReply.match(/\[STATE:\s*([^\]]+)\]/i);
+      const locMatch = rawReply.match(/\[LOC:\s*([^\]]+)\]/i);
+      if (stateMatch) config.yanState = stateMatch[1].trim();
+      if (locMatch) config.location = locMatch[1].trim();
+      if (stateMatch || locMatch) {
+        saveConfigOnly();
+        updateTelemetryBar();
+      }
+      rawReply = rawReply.replace(/\[STATE:\s*[^\]]+\]/gi, '').replace(/\[LOC:\s*[^\]]+\]/gi, '').trim();
+
+      // 2. Умное разбиение на отдельные СМС:
       let rawBubbles = [];
       if (rawReply.includes("|||")) {
         rawBubbles = rawReply.split("|||");
@@ -1682,35 +1815,39 @@ ${sliceToSummarize}`;
 
       if (!bubbles.length) return;
 
+      let customTimestamps = null;
+      if (customAbsenceInterval && customAbsenceInterval.start && customAbsenceInterval.end) {
+        customTimestamps = generateAbsenceTimestamps(customAbsenceInterval.start, customAbsenceInterval.end, bubbles.length);
+      }
+
       const status = document.getElementById("statusText");
       const box = document.getElementById("chatBox");
 
       for (let i = 0; i < bubbles.length; i++) {
-        // 2. Реалистичная пауза печати перед каждым СМС
+        // 3. Реалистичная пауза печати перед каждым СМС
         setBusyUI(true, "АМИР ПЕЧАТАЕТ...");
 
-        // Добавляем живой пузырёк с прыгающими точками (IRL мессенджер)
         const typingIndicator = document.createElement("div");
         typingIndicator.className = "msg-wrap aamir typing-wrap";
         typingIndicator.innerHTML = '<div class="msg typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>';
         box.appendChild(typingIndicator);
         box.scrollTop = box.scrollHeight;
 
-        // Естественная задержка набора текста (как человек печатает СМС)
         const delay = 650 + Math.min(bubbles[i].length * 18, 1900);
         await new Promise(r => setTimeout(r, delay));
 
-        // Убираем индикатор печати
         if (typingIndicator.parentNode) {
           typingIndicator.parentNode.removeChild(typingIndicator);
         }
 
-        // 3. Добавляем готовый пузырёк СМС в историю
+        const bTime = (customTimestamps && customTimestamps[i]) ? customTimestamps[i].time : getTime();
+        const bDate = (customTimestamps && customTimestamps[i]) ? customTimestamps[i].date : getDateStr();
+
         history.push({
           role: "assistant",
           content: bubbles[i],
-          time: getTime(),
-          date: getDateStr(),
+          time: bTime,
+          date: bDate,
           variants: [bubbles[i]],
           variantIndex: 0
         });
@@ -1719,7 +1856,6 @@ ${sliceToSummarize}`;
         renderChat();
         playChime();
 
-        // Небольшая естественная пауза между отправкой сообщений (350мс)
         if (i < bubbles.length - 1) {
           await new Promise(r => setTimeout(r, 350));
         }
@@ -1924,6 +2060,9 @@ ${sliceToSummarize}`;
 
       // Если Ян молчал больше 45 минут (спал, был офлайн, закрыл вкладку):
       if (diffMinutes >= 45) {
+        const absenceStart = lastActivity;
+        const absenceEnd = now;
+
         lastActivity = now;
         localStorage.setItem("vp_last_activity", String(lastActivity));
 
@@ -1932,10 +2071,10 @@ ${sliceToSummarize}`;
         let absenceNote = "";
 
         if (diffHours >= 8) {
-          absenceNote = `Ян не выходил на связь уже ${Math.round(diffHours)} часов. У Амира нарастает сдержанная нервозность и раздражение: он не находит себе места, проверяет камеры, биометрию, грозится взломать гермозамок медблока, если Ян свалился без сил. Короткие, резкие, тревожные СМС.`;
+          absenceNote = `Ян не выходил на связь уже ${Math.round(diffHours)} часов. У Амира нарастает сдержанная нервозность и тревога: он проверяет камеры, биометрию, грозится вскрыть гермозамок медблока, если Ян свалился без сил. Короткие, резкие, тревожные СМС.`;
         } else if (diffHours >= 3) {
           if (isNight) {
-            absenceNote = `Глубокая ночь (прошло ${Math.round(diffHours)} ч). Амир проверяет датчики сна в медблоке (пульс, температура, неподвижность). Спрашивает, спит ли Ян нормально на кушетке или снова застыл без сна в кресле.`;
+            absenceNote = `Глубокая ночь (прошло ${Math.round(diffHours)} ч). Амир проверяет датчики сна в медблоке (пульс, неподвижность). Спрашивает, спит ли Ян нормально на кушетке или снова застыл без сна в кресле.`;
           } else {
             absenceNote = `Прошло ${Math.round(diffHours)} часов молчания. День. Амир проверяет движение по камерам и приём пищи. Сдержанно требует подать голос.`;
           }
@@ -1948,20 +2087,110 @@ ${sliceToSummarize}`;
         recent.push({
           role: "user",
           content: `[СИСТЕМНАЯ ЗАМЕТКА О РЕАЛЬНОМ ВРЕМЕНИ:
-С момента последнего СМС прошло ${Math.round(diffMinutes)} минут (${Math.round(diffHours)} ч). Местное время: ${getTime()}, дата: ${getDateStr()}.
+С момента последнего сообщения прошло ${Math.round(diffMinutes)} минут (${Math.round(diffHours)} ч). Текущее время сейчас: ${getTime()}, дата: ${getDateStr()}.
 Обстановка: ${absenceNote}
-Напиши 1–3 коротких СМС через ||| от лица Амира (каждое СМС до 10-12 слов). Без смайликов и звёздочек.]`
+ВАЖНО: Напиши 2–3 коротких СМС через ||| от лица Амира, как если бы ты отправлял их в разное время в течение этих ${Math.round(diffHours)} ч простоя (первое — дежурное в середине периода, второе — более тревожное позже, третье — прямо сейчас перед вскрытием замка). Каждое СМС до 10-14 слов. Без смайликов и звёздочек. В самом конце ответа можешь указать тег [STATE: ...] для обновления состояния Яна.]`
         });
 
         isGenerating = true;
         setBusyUI(true, "ВХОДЯЩЕЕ...");
+        updateTelemetryBar(true);
+
         const reply = await callLLM(recent);
         isGenerating = false;
         setBusyUI(false);
 
         if (reply) {
-          await deliverBubbles(reply);
+          const absenceInterval = diffHours >= 2 ? { start: absenceStart, end: absenceEnd } : null;
+          await deliverBubbles(reply, absenceInterval);
         }
+
+        // Обновляем статус биометрии после простоя, если модель не выставила свой тег:
+        if (!reply || !reply.includes("[STATE:")) {
+          if (diffHours >= 6) {
+            config.yanState = `После сна (${Math.round(diffHours)} ч) • Биометрия в норме`;
+          } else if (diffHours >= 2) {
+            config.yanState = `Вышел на связь • Пульс стабилен`;
+          }
+          saveConfigOnly();
+        }
+        updateTelemetryBar(false);
+      }
+    }
+
+    async function checkIdleAndTrigger() {
+      if (!config.apiKey || isGenerating || !history || !history.length) return;
+      const inputEl = document.getElementById("msgInput");
+      if (inputEl && inputEl.value.trim().length > 0) return;
+
+      const now = Date.now();
+      const diffMins = (now - lastActivity) / (1000 * 60);
+
+      // СЦЕНАРИЙ 1: Ян игнорирует вопрос или реплику Амира (25-50 мин молчания)
+      const lastIdx = history.length - 1;
+      const lastMsg = history[lastIdx];
+      if (lastMsg && lastMsg.role === "assistant" && !lastMsg.isSensor) {
+        if (diffMins >= 25 && diffMins < 60 && lastGrumbleTargetIndex !== lastIdx) {
+          lastGrumbleTargetIndex = lastIdx;
+          lastActivity = now;
+          localStorage.setItem("vp_last_activity", String(lastActivity));
+
+          isGenerating = true;
+          setBusyUI(true, "АМИР ЖДЁТ...");
+          updateTelemetryBar(true);
+
+          const ctxLimit = Number(config.contextSize) || 35;
+          const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+          recent.push({
+            role: "user",
+            content: `[СИСТЕМНАЯ ЗАМЕТКА: Ян не отвечает на твоё последнее сообщение уже ${Math.round(diffMins)} минут, хотя терминал связи активен. Напиши 1 короткое СМС через ||| от лица Амира: проворчи сдержанно в своём стиле (спроси, почему он игнорирует, куда уставился или напомни о вопросе). До 10-12 слов. Без смайликов и звёздочек.]`
+          });
+
+          const reply = await callLLM(recent);
+          isGenerating = false;
+          setBusyUI(false);
+          updateTelemetryBar(false);
+          if (reply) await deliverBubbles(reply);
+          return;
+        }
+      }
+
+      // СЦЕНАРИЙ 2: Длительное молчание при открытом чате (90+ минут)
+      if (diffMins >= 90 && (now - lastIdlePingTime > 75 * 60 * 1000)) {
+        lastIdlePingTime = now;
+        lastActivity = now;
+        localStorage.setItem("vp_last_activity", String(lastActivity));
+
+        const hour = new Date().getHours();
+        let topicHint = "";
+        if (hour >= 12 && hour < 16) {
+          topicHint = "день, время обеда — спроси, ел ли он вообще сегодня или опять сидит на кофе и мятной жвачке";
+        } else if (hour >= 16 && hour < 22) {
+          topicHint = "вечер — поинтересуйся, чем он занят в медблоке или на базе, подметь подозрительную тишину";
+        } else if (hour >= 22 || hour < 6) {
+          topicHint = "ночь — поинтересуйся, почему он всё ещё не спит и что застыл перед монитором";
+        } else {
+          topicHint = "утро — спроси, проснулся ли он и как его пульс";
+        }
+
+        isGenerating = true;
+        setBusyUI(true, "ВХОДЯЩЕЕ...");
+        updateTelemetryBar(true);
+
+        const ctxLimit = Number(config.contextSize) || 35;
+        const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
+        recent.push({
+          role: "user",
+          content: `[СИСТЕМНАЯ ЗАМЕТКА: В чате стоит тишина уже больше полутора часов (${Math.round(diffMins)} мин). Текущее время: ${getTime()}.
+Контекст: ${topicHint}.
+Напиши 1–2 коротких СМС через ||| от лица Амира, чтобы ненавязчиво проверить Яна. До 12 слов каждое. Без смайликов и звёздочек.]`
+        });
+
+        const reply = await callLLM(recent);
+        isGenerating = false;
+        setBusyUI(false);
+        updateTelemetryBar(false);
+        if (reply) await deliverBubbles(reply);
       }
     }
 
@@ -1998,6 +2227,7 @@ ${sliceToSummarize}`;
     function openQuickStatus() {
       document.getElementById("quickLocInput").value = config.location || "";
       document.getElementById("quickStateInput").value = config.yanState || "";
+      updateGpsLabels();
       document.getElementById("quickStatusModal").classList.add("open");
     }
 
@@ -2008,6 +2238,163 @@ ${sliceToSummarize}`;
       updateTelemetryBar();
       syncToWorker();
       closeModal("quickStatusModal");
+    }
+
+    let gpsWatchId = null;
+    let lastGpsCoords = null;
+
+    function toggleGPS(enabled) {
+      config.gpsEnabled = !!enabled;
+      saveConfigOnly();
+      if (config.gpsEnabled) {
+        startGPS();
+      } else {
+        stopGPS();
+      }
+    }
+
+    function startGPS() {
+      if (!navigator.geolocation) {
+        alert("Геолокация не поддерживается вашим устройством или заблокирована браузером.");
+        const chk = document.getElementById("gpsToggle");
+        if (chk) chk.checked = false;
+        config.gpsEnabled = false;
+        saveConfigOnly();
+        return;
+      }
+      const statusEl = document.getElementById("gpsCurrentCoords");
+      if (statusEl) statusEl.textContent = "📡 Запрос координат GPS...";
+
+      navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 30000
+      });
+
+      if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
+      gpsWatchId = navigator.geolocation.watchPosition(onGpsSuccess, onGpsError, {
+        enableHighAccuracy: true,
+        maximumAge: 60000,
+        timeout: 15000
+      });
+    }
+
+    function stopGPS() {
+      if (gpsWatchId !== null) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+        gpsWatchId = null;
+      }
+      const statusEl = document.getElementById("gpsCurrentCoords");
+      if (statusEl) statusEl.textContent = "📡 GPS отключен";
+      const zoneEl = document.getElementById("gpsCurrentZone");
+      if (zoneEl) zoneEl.textContent = "📍 Определённый сектор: ручной режим";
+    }
+
+    function getDistanceMeters(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    function onGpsSuccess(pos) {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const acc = Math.round(pos.coords.accuracy || 0);
+      lastGpsCoords = { lat, lon, acc };
+
+      const coordsEl = document.getElementById("gpsCurrentCoords");
+      if (coordsEl) {
+        coordsEl.textContent = `📡 Координаты: ${lat.toFixed(4)}, ${lon.toFixed(4)} (±${acc}м)`;
+      }
+
+      evaluateLocationZone(lat, lon);
+    }
+
+    function onGpsError(err) {
+      const coordsEl = document.getElementById("gpsCurrentCoords");
+      if (coordsEl) {
+        coordsEl.textContent = `⚠️ Ошибка GPS: ${err.message || "Нет доступа к геопозиции"}`;
+      }
+    }
+
+    function evaluateLocationZone(lat, lon) {
+      let matchedSector = "Внешний сектор • В движении (Улица)";
+      let isHome = false;
+
+      if (config.homeCoords) {
+        const dHome = getDistanceMeters(lat, lon, config.homeCoords.lat, config.homeCoords.lon);
+        if (dHome <= 250) {
+          matchedSector = "База Протокола • Жилой сектор (Дом)";
+          isHome = true;
+        }
+      }
+
+      if (!isHome && config.workCoords) {
+        const dWork = getDistanceMeters(lat, lon, config.workCoords.lat, config.workCoords.lon);
+        if (dWork <= 350) {
+          matchedSector = "База Протокола • Медблок (Работа)";
+        }
+      }
+
+      const zoneEl = document.getElementById("gpsCurrentZone");
+      if (zoneEl) zoneEl.textContent = `📍 Определённый сектор: ${matchedSector}`;
+
+      if (config.location !== matchedSector) {
+        config.location = matchedSector;
+        const locInp = document.getElementById("quickLocInput");
+        if (locInp) locInp.value = matchedSector;
+        saveConfigOnly();
+        updateTelemetryBar();
+        syncToWorker();
+      }
+    }
+
+    function saveCurrentCoordsAs(type) {
+      if (!lastGpsCoords) {
+        if (!navigator.geolocation) {
+          alert("Геолокация не поддерживается вашим браузером.");
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(pos => {
+          onGpsSuccess(pos);
+          applySavedCoord(type, pos.coords.latitude, pos.coords.longitude);
+        }, err => {
+          alert("Не удалось получить координаты: " + err.message);
+        }, { enableHighAccuracy: true });
+        return;
+      }
+      applySavedCoord(type, lastGpsCoords.lat, lastGpsCoords.lon);
+    }
+
+    function applySavedCoord(type, lat, lon) {
+      if (type === "home") {
+        config.homeCoords = { lat, lon };
+        alert("Координаты ДОМА (Жилого сектора) успешно сохранены!");
+      } else if (type === "work") {
+        config.workCoords = { lat, lon };
+        alert("Координаты РАБОТЫ (Медблока) успешно сохранены!");
+      }
+      saveConfigOnly();
+      updateGpsLabels();
+      evaluateLocationZone(lat, lon);
+    }
+
+    function updateGpsLabels() {
+      const homeLbl = document.getElementById("gpsHomeLabel");
+      const workLbl = document.getElementById("gpsWorkLabel");
+      if (homeLbl) {
+        homeLbl.textContent = config.homeCoords ? `🏠 ДОМ: ${config.homeCoords.lat.toFixed(4)}, ${config.homeCoords.lon.toFixed(4)}` : "🏠 ДОМ: не задан";
+      }
+      if (workLbl) {
+        workLbl.textContent = config.workCoords ? `🏥 РАБОТА: ${config.workCoords.lat.toFixed(4)}, ${config.workCoords.lon.toFixed(4)}` : "🏥 РАБОТА: не задан";
+      }
+      const toggle = document.getElementById("gpsToggle");
+      if (toggle) toggle.checked = !!config.gpsEnabled;
     }
 
     function openLorebook() {
