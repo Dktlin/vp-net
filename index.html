@@ -465,6 +465,38 @@
     }
 
     .regen-bar { align-self: flex-start; margin-top: 2px; }
+    .system-tag.error-tag {
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.35);
+      max-width: 90%;
+      text-transform: none;
+      font-family: inherit;
+      font-size: 11px;
+      line-height: 1.4;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+    .err-act-btn {
+      background: #1e293b;
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-weight: 700;
+      transition: all 0.15s ease;
+    }
+    .err-act-btn:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #fff;
+    }
     .system-tag { align-self: center; font-size: 10px; color: var(--muted); background: #0f141d; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); margin: 4px 0; text-align: center; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; letter-spacing: 0.5px; }
 
     .input-area {
@@ -515,6 +547,7 @@
         </div>
       </div>
       <div class="header-btns">
+        <button class="icon-btn" id="pingBtn" onclick="forceAbsenceCatchUp()" title="Проверка связи: смоделировать отсутствие (15ч / простой)">PING</button>
         <button class="icon-btn" id="eventBtn" onclick="triggerRandomDayEvent()" title="Случайное событие в медблоке / на базе">✦ EVT</button>
         <button class="icon-btn" id="sensorBtn" onclick="triggerSensorPing()" title="Отправить сигнал с датчиков Яна">SENS</button>
         <button class="icon-btn" id="proactiveBtn" onclick="triggerProactive(false)" title="Запросить входящее СМС от Амира">SMS</button>
@@ -1830,13 +1863,15 @@ ${getLengthInstruction()}
 
     async function callLLM(messagesPayload, customSystem = null, maxTok = null) {
       if (!config.apiKey) {
-        alert("Пожалуйста, введите ваш API ключ в настройках (CFG)!");
+        showChatError("Не указан API ключ. Откройте настройки [CFG] и введите ваш ключ OpenRouter.");
         openSettings();
         return null;
       }
 
+      const controller = new AbortController();
+      const timeoutTimer = setTimeout(() => controller.abort(), 45000);
+
       try {
-        // Гарантированная защита от null и undefined в сообщениях:
         const sanitizedSystem = String(customSystem || buildSystemPrompt() || "").trim();
         const sanitizedMessages = [
           { role: "system", content: sanitizedSystem },
@@ -1847,7 +1882,7 @@ ${getLengthInstruction()}
         ];
 
         const bodyPayload = {
-          model: config.model,
+          model: config.model || "deepseek/deepseek-chat",
           messages: sanitizedMessages,
           temperature: Number(config.temperature) || 0.9,
           max_tokens: maxTok || Number(config.maxTokens) || 700
@@ -1866,23 +1901,32 @@ ${getLengthInstruction()}
             "HTTP-Referer": window.location.href,
             "X-Title": "VP-NET Cypher Chat"
           },
-          body: JSON.stringify(bodyPayload)
+          body: JSON.stringify(bodyPayload),
+          signal: controller.signal
         });
 
-        const data = await res.json();
+        clearTimeout(timeoutTimer);
+
+        const rawResponseText = await res.text();
+        let data;
+        try {
+          data = JSON.parse(rawResponseText);
+        } catch (jsonErr) {
+          throw new Error(`Сервер вернул ошибку (${res.status} ${res.statusText}): ${rawResponseText.slice(0, 150)}`);
+        }
+
         if (!res.ok || data.error) {
           const errDetail = data.error?.message || data.error || `${res.status} ${res.statusText}`;
           throw new Error(typeof errDetail === "string" ? errDetail : JSON.stringify(errDetail));
         }
 
         if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-          throw new Error("Не удалось получить ответ модели: " + JSON.stringify(data));
+          throw new Error("Пустой ответ от сервера: " + JSON.stringify(data));
         }
 
         const msg = data.choices[0].message;
         let rawContent = msg.content || "";
 
-        // Удаляем теги рассуждений моделей (DeepSeek-R1 / Qwen thinking):
         let textContent = String(rawContent)
           .replace(/<think>[\s\S]*?<\/think>/gi, '')
           .replace(/```thought[\s\S]*?```/gi, '')
@@ -1895,7 +1939,13 @@ ${getLengthInstruction()}
 
         return textContent;
       } catch (err) {
-        if (!customSystem) alert("Ошибка API: " + err.message);
+        clearTimeout(timeoutTimer);
+        const isTimeout = err.name === "AbortError";
+        const errMessage = isTimeout ? "Превышено время ожидания (таймаут 45с). Сервер перегружен." : (err.message || String(err));
+        console.error("API Error in callLLM:", errMessage);
+        if (!customSystem) {
+          showChatError(errMessage);
+        }
         return null;
       }
     }
@@ -1938,36 +1988,22 @@ ${sliceToSummarize}`;
 
     function generateAbsenceTimestamps(startTime, endTime, count) {
       if (count <= 0) return [];
-      if (count === 1) {
-        const d = new Date(endTime - 2 * 60 * 1000);
-        return [{ time: getTime(d), date: getDateStr(d) }];
-      }
       const diff = endTime - startTime;
       const list = [];
-      if (count === 2) {
-        const d1 = new Date(startTime + diff * 0.60);
-        const d2 = new Date(endTime - 2 * 60 * 1000);
-        list.push({ time: getTime(d1), date: getDateStr(d1) });
-        list.push({ time: getTime(d2), date: getDateStr(d2) });
-      } else if (count === 3) {
-        const d1 = new Date(startTime + diff * 0.42);
-        const d2 = new Date(startTime + diff * 0.82);
-        const d3 = new Date(endTime - 2 * 60 * 1000);
-        list.push({ time: getTime(d1), date: getDateStr(d1) });
-        list.push({ time: getTime(d2), date: getDateStr(d2) });
-        list.push({ time: getTime(d3), date: getDateStr(d3) });
-      } else {
-        for (let i = 0; i < count; i++) {
-          let frac;
-          if (i === count - 1) {
-            frac = 1.0;
-          } else {
-            frac = 0.35 + (0.55 * (i / (count - 1)));
-          }
-          const t = i === count - 1 ? (endTime - 2 * 60 * 1000) : (startTime + diff * frac);
-          const d = new Date(t);
-          list.push({ time: getTime(d), date: getDateStr(d) });
-        }
+      for (let i = 0; i < count; i++) {
+        let frac;
+        if (count === 1) frac = 0.95;
+        else if (count === 2) frac = (i === 0) ? 0.60 : 0.95;
+        else if (count === 3) frac = (i === 0) ? 0.40 : ((i === 1) ? 0.75 : 0.95);
+        else frac = 0.30 + (0.65 * (i / (count - 1)));
+
+        const t = Math.round(startTime + (diff * frac));
+        const d = new Date(t);
+        list.push({
+          time: getTime(d),
+          date: getDateStr(d),
+          timestamp: t
+        });
       }
       return list;
     }
@@ -2123,15 +2159,19 @@ ${sliceToSummarize}`;
             continue;
           }
 
+          const itemTime = (customTimestamps && customTimestamps[i]) ? customTimestamps[i].time : getTime();
+          const itemDate = (customTimestamps && customTimestamps[i]) ? customTimestamps[i].date : getDateStr();
+          const itemTs = (customTimestamps && customTimestamps[i]) ? customTimestamps[i].timestamp : Date.now();
+
           if (item.isNarrative) {
-            // Нарративное действие между СМС: короткая пауза и отображение действия
             await new Promise(r => setTimeout(r, 450));
             history.push({
               role: "assistant",
               content: item.text,
               isNarrative: true,
-              time: customTimestamps ? customTimestamps[i] : getTime(),
-              date: getDateStr()
+              time: itemTime,
+              date: itemDate,
+              timestamp: itemTs
             });
             saveHistory();
             renderChat();
@@ -2159,8 +2199,9 @@ ${sliceToSummarize}`;
             role: "assistant",
             content: item.text,
             isNarrative: false,
-            time: customTimestamps ? customTimestamps[i] : getTime(),
-            date: getDateStr(),
+            time: itemTime,
+            date: itemDate,
+            timestamp: itemTs,
             variants: [item.text],
             variantIndex: 0
           });
@@ -2228,7 +2269,8 @@ ${sliceToSummarize}`;
         content: cleanContent,
         isNarrative: isNar,
         time: getTime(),
-        date: getDateStr()
+        date: getDateStr(),
+        timestamp: Date.now()
       });
 
       saveHistory();
@@ -2372,20 +2414,25 @@ ${sliceToSummarize}`;
       }
     }
 
-    async function checkAbsenceCatchUp() {
+    async function checkAbsenceCatchUp(force = false, forcedStart = null, forcedHours = null) {
       if (!config.apiKey || isGenerating) return;
 
       const now = Date.now();
-      const diffMinutes = (now - lastActivity) / (1000 * 60);
-      const diffHours = diffMinutes / 60;
+      let effectiveLastActivity = forcedStart || lastActivity;
+      if (!forcedStart && history && history.length > 0) {
+        const lastMsg = history[history.length - 1];
+        if (lastMsg && lastMsg.timestamp) {
+          effectiveLastActivity = Math.min(lastActivity, Number(lastMsg.timestamp));
+        }
+      }
 
-      // Если Ян молчал больше 45 минут (спал, был офлайн, закрыл вкладку):
-      if (diffMinutes >= 45) {
-        const absenceStart = lastActivity;
+      const diffMinutes = forcedHours ? (forcedHours * 60) : ((now - effectiveLastActivity) / (1000 * 60));
+      const diffHours = forcedHours || (diffMinutes / 60);
+
+      // Если Ян молчал больше 40 минут (спал, был офлайн, закрыл вкладку) или принудительный вызов (PING):
+      if (diffMinutes >= 40 || force) {
+        const absenceStart = effectiveLastActivity;
         const absenceEnd = now;
-
-        lastActivity = now;
-        localStorage.setItem("vp_last_activity", String(lastActivity));
 
         const hour = new Date().getHours();
         const isNight = hour >= 23 || hour < 7;
@@ -2435,9 +2482,13 @@ ${sliceToSummarize}`;
 
         try {
           const reply = await callLLM(recent);
-          if (reply) {
+          if (reply && reply.trim()) {
             const absenceInterval = { start: absenceStart, end: absenceEnd };
             await deliverBubbles(reply, absenceInterval);
+            lastActivity = Date.now();
+            localStorage.setItem("vp_last_activity", String(lastActivity));
+          } else {
+            console.warn("checkAbsenceCatchUp: empty reply from LLM, will retry.");
           }
         } finally {
           isGenerating = false;
@@ -2815,6 +2866,53 @@ ${sliceToSummarize}`;
       config.lorebook.splice(index, 1);
       saveConfigOnly();
       renderLoreList();
+    }
+
+        function showChatError(errMsg) {
+      const box = document.getElementById("chatBox");
+      if (!box) return;
+      // Удаляем старые плашки ошибок если есть
+      const old = box.querySelectorAll('.error-tag');
+      old.forEach(el => el.remove());
+
+      const errDiv = document.createElement("div");
+      errDiv.className = "system-tag error-tag";
+      errDiv.innerHTML = `⚠️ СБОЙ СВЯЗИ: ${escapeHtml(errMsg)} <button class="err-act-btn" onclick="openSettings()">[CFG]</button> <button class="err-act-btn" onclick="retryLastAction()">[RETRY]</button>`;
+      box.appendChild(errDiv);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function retryLastAction() {
+      const old = document.querySelectorAll('.error-tag');
+      old.forEach(el => el.remove());
+      if (history && history.length && history[history.length - 1].role === "user") {
+        triggerAmirReply(false);
+      } else {
+        checkAbsenceCatchUp(true);
+      }
+    }
+
+    function forceAbsenceCatchUp() {
+      if (isGenerating) return;
+      const now = Date.now();
+      let effectiveLastActivity = lastActivity;
+      if (history && history.length > 0) {
+        const lastMsg = history[history.length - 1];
+        if (lastMsg && lastMsg.timestamp) {
+          effectiveLastActivity = Math.min(lastActivity, Number(lastMsg.timestamp));
+        }
+      }
+
+      let diffHours = (now - effectiveLastActivity) / (1000 * 3600);
+
+      if (diffHours < 1) {
+        const customHours = prompt("Сколько часов молчания/отсутствия Яна смоделировать для проверки реакции Амира?", "15");
+        if (!customHours || isNaN(parseFloat(customHours))) return;
+        diffHours = parseFloat(customHours);
+        effectiveLastActivity = now - (diffHours * 3600 * 1000);
+      }
+
+      checkAbsenceCatchUp(true, effectiveLastActivity, diffHours);
     }
 
     function openSettings() {
