@@ -616,11 +616,17 @@
           <div style="display:flex; flex-direction:column; gap:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; background:#121a28; padding:5px 8px; border-radius:6px;">
               <span id="gpsHomeLabel" style="font-size:11px;">🏠 ДОМ: не задан</span>
-              <button type="button" class="btn-sec" style="padding:3px 8px; font-size:10px;" onclick="saveCurrentCoordsAs('home')">Запомнить здесь</button>
+              <div style="display:flex; gap:4px;">
+                <button type="button" class="btn-sec" style="padding:3px 8px; font-size:10px;" onclick="saveCurrentCoordsAs('home')">Запомнить здесь</button>
+                <button type="button" class="btn-sec" style="padding:3px 6px; font-size:10px; color:#ef4444;" onclick="clearCoord('home')" title="Сбросить координаты Дома">✕</button>
+              </div>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; background:#121a28; padding:5px 8px; border-radius:6px;">
               <span id="gpsWorkLabel" style="font-size:11px;">🏥 РАБОТА: не задан</span>
-              <button type="button" class="btn-sec" style="padding:3px 8px; font-size:10px;" onclick="saveCurrentCoordsAs('work')">Запомнить здесь</button>
+              <div style="display:flex; gap:4px;">
+                <button type="button" class="btn-sec" style="padding:3px 8px; font-size:10px;" onclick="saveCurrentCoordsAs('work')">Запомнить здесь</button>
+                <button type="button" class="btn-sec" style="padding:3px 6px; font-size:10px; color:#ef4444;" onclick="clearCoord('work')" title="Сбросить координаты Работы">✕</button>
+              </div>
             </div>
           </div>
           
@@ -897,8 +903,10 @@
   Ян. Открой дверь. Я слышу твои шаги.|||*глухой стук костяшек пальцев по гермодвери каюты*|||Либо ты сам открываешь, либо я достаю ключ-карту.
 
 СЛУЖЕБНЫЕ ТЕГИ ТЕЛЕМЕТРИИ (ДЛЯ ВЕРХНЕГО ДАШБОРДА):
-Если состояние Яна или его локация изменились (он поспал, сообщил что проснулся, устал, выпил кофе, пульс восстановился, ушёл в жилой сектор или медблок) — ты можешь в самом конце ответа добавить служебные теги:
-[STATE: краткий статус, например "Отоспался 13ч • Пульс 68 bpm" или "Тахикардия • Без сна 20ч" или "Пьёт кофе • Пульс в норме"]
+В самом конце ответа обязательно укажи тег актуального состояния Яна по биометрии:
+[STATE: Пульс <число> bpm • <краткий статус по-русски>]
+Примеры: [STATE: Пульс 104 bpm • Смущён] или [STATE: Пульс 74 bpm • Пьёт чай] или [STATE: Пульс 66 bpm • Отоспался] или [STATE: Пульс 124 bpm • Паника / тахикардия].
+Если сектор изменился, также укажи:
 [LOC: сектор базы или города, например "База Протокола • Медблок" или "База Протокола • Жилой сектор (Дом)"]
 Эти теги обновят верхнюю строку дашборда и будут автоматически скрыты из пузырьков чата.
 
@@ -2027,6 +2035,98 @@ ${sliceToSummarize}`;
       }
     }
 
+    function calculateDynamicYanState(detectedState, triggerText, prevYanState) {
+      let prevBpm = 76;
+      if (prevYanState) {
+        const bpmMatch = String(prevYanState).match(/(\d{2,3})\s*bpm/i);
+        if (bpmMatch) prevBpm = parseInt(bpmMatch[1], 10);
+      }
+
+      // 1. Если модель передала явный [STATE: ...]
+      if (detectedState && detectedState.trim()) {
+        let clean = detectedState
+          .replace(/^\[STATE:\s*/i, '')
+          .replace(/[\]]+$/g, '')
+          .replace(/щойно\s*прокинувся/gi, 'Только что проснулся')
+          .replace(/щойно/gi, 'Только что')
+          .replace(/прокинувся/gi, 'Проснулся')
+          .replace(/зараз/gi, 'Сейчас')
+          .trim();
+
+        // Проверяем, есть ли уже bpm в ответе модели
+        const match = clean.match(/(\d{2,3})\s*bpm/i);
+        if (match) {
+          const modelBpm = parseInt(match[1], 10);
+          // Добавляем естественный физиологический джиттер (±1..2 bpm) для живого датчика
+          const jitter = (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 2) + 1);
+          const finalBpm = Math.max(55, Math.min(160, modelBpm + jitter));
+          return clean.replace(/\d{2,3}\s*bpm/i, `${finalBpm} bpm`);
+        } else {
+          // Модель указала только статус без bpm -> рассчитываем пульс
+          const jitter = Math.floor(Math.random() * 5) - 2;
+          const assignedBpm = Math.max(65, Math.min(130, (prevBpm || 80) + jitter));
+          return `Пульс ${assignedBpm} bpm • ${clean}`;
+        }
+      }
+
+      // 2. Если модель не передала тег или анализ происходит мгновенно при отправке СМС Яна
+      const text = String(triggerText || "").trim();
+      const lower = text.toLowerCase();
+
+      // Проверка на капс (крик, паника, срыв, агрессия)
+      const lettersOnly = text.replace(/[^а-яА-ЯёЁa-zA-Z]/g, '');
+      const isCaps = lettersOnly.length >= 4 && lettersOnly === lettersOnly.toUpperCase();
+
+      if (isCaps || text.includes("!!!") || lower.includes("хватит") || lower.includes("отвали") || lower.includes("заткнись")) {
+        const bpm = 118 + Math.floor(Math.random() * 15);
+        return `Пульс ${bpm} bpm • Срыв / Защитная агрессия`;
+      }
+
+      if (lower.includes("больно") || lower.includes("кровь") || lower.includes("нити") || lower.includes("шов") || 
+          lower.includes("ранение") || lower.includes("тошнит") || lower.includes("рука") || lower.includes("дрож") ||
+          lower.includes("перестрелк") || lower.includes("маячок в красной")) {
+        const bpm = 114 + Math.floor(Math.random() * 14);
+        return `Пульс ${bpm} bpm • Болевой синдром / Перегрузка нитей`;
+      }
+
+      if (lower.includes("бебебе") || lower.includes("папочка") || lower.includes("старик") || lower.includes("дилф") ||
+          lower.includes("красивый") || lower.includes("сидание") || lower.includes("свидание") || lower.includes("цветы") ||
+          lower.includes("<3") || lower.includes("люблю") || lower.includes("не ворчи") || lower.includes("смущ")) {
+        const bpm = 94 + Math.floor(Math.random() * 14);
+        return `Пульс ${bpm} bpm • Смущение / Защитный сарказм`;
+      }
+
+      if (lower.includes("боюсь") || lower.includes("страшно") || lower.includes("не бросай") || lower.includes("кровать") ||
+          lower.includes("верю") || lower.includes("тревожн") || lower.includes("паник")) {
+        const bpm = 92 + Math.floor(Math.random() * 12);
+        return `Пульс ${bpm} bpm • Тревожность / Поиск опоры`;
+      }
+
+      if (lower.includes("чай") || lower.includes("кофе") || lower.includes("поел") || lower.includes("ем ") ||
+          lower.includes("вода") || lower.includes("выпил") || lower.includes("термос") || lower.includes("макарон") ||
+          lower.includes("ужин") || lower.includes("обед")) {
+        const bpm = 72 + Math.floor(Math.random() * 8);
+        return `Пульс ${bpm} bpm • Тёплый чай / Стабилизация`;
+      }
+
+      if (lower.includes("спал") || lower.includes("сон") || lower.includes("утро") || lower.includes("проснулся") ||
+          lower.includes("встал") || lower.includes("ночь") || lower.includes("дрых") || lower.includes("зеваю")) {
+        const bpm = 65 + Math.floor(Math.random() * 8);
+        return `Пульс ${bpm} bpm • Пробуждение / Пульс после сна`;
+      }
+
+      if (text.length <= 15 && (lower.includes("ладно") || lower.includes("ок") || lower.includes("ясно") ||
+          lower.includes("норм") || lower.includes("ничего") || lower.includes("забей") || lower.includes("...") || lower.includes("мда"))) {
+        const bpm = 78 + Math.floor(Math.random() * 7);
+        return `Пульс ${bpm} bpm • Замкнулся / Держит дистанцию`;
+      }
+
+      // Естественная фоновая динамика (живой кардиомонитор):
+      const drift = Math.floor(Math.random() * 7) - 3; // -3..+3 bpm
+      const nextBpm = Math.max(68, Math.min(106, prevBpm + drift));
+      return `Пульс ${nextBpm} bpm • Наблюдение / Кардиомониторинг`;
+    }
+
     async function deliverBubbles(rawReply, customAbsenceInterval = null) {
       if (!rawReply || !rawReply.trim()) return;
       isGenerating = true;
@@ -2147,23 +2247,9 @@ ${sliceToSummarize}`;
         if (!bubbles.length) return;
 
         // 5. Гарантированное обновление телеметрии биометрии
-        if (detectedState) {
-          config.yanState = detectedState;
-        } else {
-          const lastUser = [...history].reverse().find(m => m.role === "user");
-          if (lastUser) {
-            const txt = String(lastUser.content || "").toLowerCase();
-            if (txt.includes("папочка") || txt.includes("не ори") || txt.includes("се норм")) {
-              config.yanState = "Пульс 98 bpm • Смущён / огрызается";
-            } else if (txt.includes("чай") || txt.includes("кофе") || txt.includes("допил")) {
-              config.yanState = "Пульс 76 bpm • Пьёт чай";
-            } else if (txt.includes("спал") || txt.includes("сон") || txt.includes("утро")) {
-              config.yanState = "Пульс 65 bpm • Отоспался";
-            } else if (txt.includes("больно") || txt.includes("кровь") || txt.includes("нити")) {
-              config.yanState = "Пульс 124 bpm • Тревожность / тахикардия";
-            }
-          }
-        }
+        const lastUser = [...history].reverse().find(m => m.role === "user" && !m.isNarrative);
+        const lastUserText = lastUser ? lastUser.content : "";
+        config.yanState = calculateDynamicYanState(detectedState, lastUserText, config.yanState);
         if (detectedLoc) config.location = detectedLoc;
         saveConfigOnly();
         updateTelemetryBar();
@@ -2299,6 +2385,14 @@ ${sliceToSummarize}`;
         timestamp: Date.now()
       });
 
+      // Динамическая телеметрия мгновенно реагирует на слова и эмоции Яна:
+      if (!isNar) {
+        config.yanState = calculateDynamicYanState(null, cleanContent, config.yanState);
+        saveConfigOnly();
+        updateTelemetryBar();
+        flashStateUpdate();
+      }
+
       saveHistory();
       renderChat();
       resetAutoTimer();
@@ -2351,8 +2445,8 @@ ${sliceToSummarize}`;
 
       // Строгое напоминание формата (защита от забывания ||| и простыней):
       const formatReminder = urgent
-        ? "[СИСТЕМНОЕ ТРЕБОВАНИЕ: Ян написал капсом или ранен! Ответь 1–2 резкими, тревожными СМС строго через ||| (до 10 слов каждое). В конце укажи: [STATE: пульс bpm • статус].]"
-        : "[СИСТЕМНОЕ ТРЕБОВАНИЕ: Ответь 2–4 отдельными короткими СМС, СТРОГО разделяя их символом ||| (каждое СМС строго до 10-12 слов). При необходимости между СМС можно вставить действие в звёздочках: *действие*. Не пиши одним сплошным куском! В самом конце ответа обязательно укажи актуальную биометрию Яна: [STATE: пульс bpm • статус].]";
+        ? "[СИСТЕМНОЕ ТРЕБОВАНИЕ: Ян написал капсом или ранен! Ответь 1–2 резкими, тревожными СМС строго через ||| (до 10 слов каждое). В конце укажи: [STATE: Пульс <число> bpm • статус].]"
+        : "[СИСТЕМНОЕ ТРЕБОВАНИЕ: Ответь 2–4 отдельными короткими СМС, СТРОГО разделяя их символом ||| (каждое СМС строго до 10-12 слов). При необходимости между СМС можно вставить действие: *действие*. Не пиши одним сплошным куском! В самом конце ответа обязательно укажи актуальный пульс и статус Яна: [STATE: Пульс <число> bpm • статус].]";
 
       recent.push({ role: "user", content: formatReminder });
 
@@ -2409,7 +2503,13 @@ ${sliceToSummarize}`;
         pendingReplyTimer = null;
       }
 
-      const note = `[БИОМЕТРИЧЕСКАЯ ТРЕВОГА: На терминал Амира поступил сигнал с датчиков импланта Яна. Состояние: ${config.yanState || "Резкий скачок пульса до 125 bpm, тремор пальцев"}. Отреагируй короткими тревожными СМС через ||| (потребуй сесть на кушетку или выпить воды).]`;
+      const alarmBpm = 124 + Math.floor(Math.random() * 12);
+      config.yanState = `Пульс ${alarmBpm} bpm • Резкий скачок / Тахикардия`;
+      saveConfigOnly();
+      updateTelemetryBar();
+      flashStateUpdate();
+
+      const note = `[БИОМЕТРИЧЕСКАЯ ТРЕВОГА: На терминал Амира поступил сигнал с датчиков импланта Яна. Состояние: ${config.yanState}. Отреагируй короткими тревожными СМС через ||| (потребуй сесть на кушетку или выпить воды).]`;
       history.push({
         role: "user",
         content: `*Датчик импланта зафиксировал скачок: ${config.yanState}*`,
@@ -2527,6 +2627,11 @@ ${sliceToSummarize}`;
     function triggerRandomDayEvent(customText = null) {
       if (isGenerating) return;
       const evt = customText || RANDOM_DAY_EVENTS[Math.floor(Math.random() * RANDOM_DAY_EVENTS.length)];
+      config.yanState = calculateDynamicYanState(null, evt, config.yanState);
+      saveConfigOnly();
+      updateTelemetryBar();
+      flashStateUpdate();
+
       history.push({
         role: "user",
         content: `*${evt}*`,
@@ -2546,7 +2651,7 @@ ${sliceToSummarize}`;
       const recent = history.slice(-ctxLimit).map(m => ({ role: m.role, content: m.content }));
       recent.push({
         role: "user",
-        content: `[СИСТЕМНАЯ ЗАМЕТКА: На базе произошло событие: "${evt}". Напиши Яну от лица Амира (2–3 коротких СМС через |||), отреагировав по камерам или биометрии. В конце [STATE: пульс bpm • статус]. Без смайликов и звёздочек.]`
+        content: `[СИСТЕМНАЯ ЗАМЕТКА: На базе произошло событие: "${evt}". Напиши Яну от лица Амира (2–3 коротких СМС через |||), отреагировав по камерам или биометрии. В конце [STATE: Пульс <число> bpm • статус]. Без смайликов и звёздочек.]`
       });
 
       callLLM(recent).then(async reply => {
@@ -2842,6 +2947,21 @@ ${sliceToSummarize}`;
       evaluateLocationZone(lat, lon);
     }
 
+    function clearCoord(type) {
+      if (type === "home") {
+        config.homeCoords = null;
+        alert("Координаты ДОМА сброшены.");
+      } else if (type === "work") {
+        config.workCoords = null;
+        alert("Координаты РАБОТЫ сброшены.");
+      }
+      saveConfigOnly();
+      updateGpsLabels();
+      if (lastGpsCoords) {
+        evaluateLocationZone(lastGpsCoords.lat, lastGpsCoords.lon);
+      }
+    }
+
     function updateGpsLabels() {
       const homeLbl = document.getElementById("gpsHomeLabel");
       const workLbl = document.getElementById("gpsWorkLabel");
@@ -3062,34 +3182,72 @@ ${sliceToSummarize}`;
       reader.readAsText(file);
     }
 
-    function archiveAndStartNewChat() {
-      if (!confirm("Автоматически сохранить текущую переписку в JSON на твоё устройство и начать новую главу с чистого листа?")) return;
-      exportChat();
-      history = getInitialGreetingBubbles(config.location);
+    function resetChatSession(isArchive = false) {
+      if (isArchive) {
+        exportChat();
+      }
+
+      // 1. Отключаем GPS и сбрасываем гео-точки (Дом, Работа)
+      stopGPS();
+      config.gpsEnabled = false;
+      config.homeCoords = null;
+      config.workCoords = null;
+
+      // 2. Сбрасываем сектор и биометрию на стартовые значения
+      config.location = "База Протокола • Медблок";
+      config.yanState = "Не спал 24ч • Пульс повышен";
+
+      // 3. Сбрасываем динамическую сюжетную память, автосаммари и заметки сценариста
       config.autoSummary = "";
       config.lastSummarizedCount = 0;
+      config.authorNote = "";
+      config.memory = "Начальный этап. Ян держит дистанцию, легко срывается в агрессию при смущении, но начинает привыкать, что Амир всегда приглядывает за ним.";
+      config.storyGoal = "Медленный слоуберн: невысказанная взаимная привязанность. Амир бережно опекает Яна, не торопит события и следит за его безопасностью.";
+
+      // 4. Сбрасываем историю сообщений на стартовое приветствие Медблока
+      history = getInitialGreetingBubbles("База Протокола • Медблок");
+
+      // 5. Обновляем время последней активности
       lastActivity = Date.now();
       localStorage.setItem("vp_last_activity", String(lastActivity));
+
+      // 6. Сохраняем в localStorage и IndexedDB (все настройки модели, apiKey, URL, температура и лорбук остаются нетронутыми!)
       saveConfigOnly();
       saveHistory();
+
+      // 7. Обновляем элементы интерфейса и инпуты открытых окон
       renderChat();
       updateTelemetryBar();
+      updateGpsLabels();
+
+      const locInp = document.getElementById("quickLocInput");
+      if (locInp) locInp.value = config.location;
+      const stateInp = document.getElementById("quickStateInput");
+      if (stateInp) stateInp.value = config.yanState;
+      const memInp = document.getElementById("memoryInput");
+      if (memInp) memInp.value = config.memory;
+      const goalInp = document.getElementById("goalInput");
+      if (goalInp) goalInp.value = config.storyGoal;
+      const noteInp = document.getElementById("authorNoteInput");
+      if (noteInp) noteInp.value = config.authorNote;
+
       syncToWorker();
       closeModal("settingsModal");
-      showToast("ЧАТ АРХИВИРОВАН В ФАЙЛ. НАЧАТ НОВЫЙ ДИАЛОГ!");
+      closeModal("quickStatusModal");
+
+      showToast(isArchive 
+        ? "ЧАТ СОХРАНЁН В ФАЙЛ. ВСЯ ИСТОРИЯ, ПАМЯТЬ И ГЕО-ТОЧКИ СБРОШЕНЫ!" 
+        : "ЧАТ, ДИНАМИЧЕСКИЕ СОБЫТИЯ И ГЕОЛОКАЦИЯ ПОЛНОСТЬЮ СБРОШЕНЫ!");
+    }
+
+    function archiveAndStartNewChat() {
+      if (!confirm("Автоматически сохранить текущую переписку в JSON на твоё устройство и начать новую главу с чистого листа (со сбросом гео-точек, событий и памяти, но с сохранением модели и ключа)?")) return;
+      resetChatSession(true);
     }
 
     function clearHistory() {
-      if (confirm("Очистить переписку? Рекомендуется предварительно сделать Экспорт JSON.")) {
-        history = getInitialGreetingBubbles(config.location);
-        config.lastSummarizedCount = 0;
-        lastActivity = Date.now();
-        localStorage.setItem("vp_last_activity", String(lastActivity));
-        saveConfigOnly();
-        saveHistory();
-        renderChat();
-        syncToWorker();
-        closeModal("settingsModal");
+      if (confirm("Сбросить чат, сюжетные события, память и гео-точки к начальному состоянию? (Настройки модели, ключ API и карточки лора сохранятся). Рекомендуется предварительно сохранить JSON.")) {
+        resetChatSession(false);
       }
     }
 
