@@ -762,12 +762,12 @@
         <label>Быстрый выбор модели (Пресеты)</label>
         <select id="modelPresetSelect" onchange="applyModelPreset()">
           <option value="">-- Выбрать пресет --</option>
-          <option value="gemini|gemini-2.5-flash">Google Gemini: 2.5 Flash (AI Studio, быстрая)</option>
+          <option value="openrouter|deepseek/deepseek-chat">★ OpenRouter: DeepSeek V3 (Рекомендуется! Умнейшая, копейки)</option>
+          <option value="openrouter|google/gemini-2.0-flash-exp:free">OpenRouter: Gemini 2.0 Flash (Бесплатная, быстрая)</option>
+          <option value="openrouter|meta-llama/llama-3.3-70b-instruct:free">OpenRouter: Llama 3.3 70B (Бесплатная, сильная логика)</option>
+          <option value="openrouter|deepseek/deepseek-r1:free">OpenRouter: DeepSeek R1 (Бесплатная рассуждающая)</option>
+          <option value="gemini|gemini-2.5-flash">Google Gemini: 2.5 Flash (AI Studio)</option>
           <option value="gemini|gemini-2.0-flash">Google Gemini: 2.0 Flash (AI Studio)</option>
-          <option value="openrouter|deepseek/deepseek-chat-v3-0324:free">OpenRouter: DeepSeek V3 (Бесплатная)</option>
-          <option value="openrouter|deepseek/deepseek-r1:free">OpenRouter: DeepSeek R1 (Бесплатная)</option>
-          <option value="openrouter|google/gemini-2.0-flash-exp:free">OpenRouter: Gemini 2.0 Flash (Бесплатная)</option>
-          <option value="openrouter|deepseek/deepseek-chat">OpenRouter: DeepSeek V3 (Платная / стабильная)</option>
           <option value="deepseek|deepseek-chat">DeepSeek Official API: deepseek-chat</option>
         </select>
       </div>
@@ -868,6 +868,11 @@
 - Каждое отдельное СМС должно быть СТРОГО коротким: максимум 1–2 коротких строки (от 2 до 12 слов)!
 - Сайфер НИКОГДА не пишет длинные абзацы по 4–5 строк. Он пишет скупо, отрывисто, короткими очередями СМС, как взрослый занятой брокер на клавиатуре.
 
+СТРОГИЙ ЯЗЫКОВОЙ РЕЖИМ (100% РУССКИЙ ЯЗЫК):
+- Все сообщения, мысли, теги телеметрии [STATE: ...] и действия пиши ИСКЛЮЧИТЕЛЬНО на чистом русском литературном языке!
+- КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО использовать украинские слова («щойно прокинувся», «зараз», «треба», «дякую» и т.д.) или суржик.
+- Исключение: точечный марокканский арабский колорит Амира (ya doctor, safi, yallah, habibi).
+
 СТРОГИЙ ЗАПРЕТ НА РАССУЖДЕНИЯ И ВАРИАНТЫ:
 - КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО выводить рассуждения, мысли, анализ («Мы находимся в ролевой игре...», «Согласно последнему сообщению...», «Мне нужно ответить...»).
 - КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО выдавать два варианта ответа («Вариант 1», «Вариант 2», «Или:», «Альтернатива:»). Напиши СТРОГО ОДИН законченный ответ Амира.
@@ -876,9 +881,14 @@
 - НИКАКИХ клише: «Слышу тебя громко и чётко», «Договорились?», «Как твой наставник...».
 - НИКАКИХ смайликов и эмодзи.
 
+ЛОГИКА ДЕЙСТВИЙ И КОНТЕКСТА:
+- Действия между СМС (*...*) используй ТОЛЬКО тогда, когда они уместны и логичны! Не вставляй их механически в каждую реплику.
+- Если Ян УЖЕ ответил в чате (например, «доброе утро, зачем стучишь») — Амир НЕ стучит повторно в дверь, он уже разговаривает с Яном!
+- Учитывай прошедшее время: если Ян проспал 15 часов (на часах день/вечер), ночной чай давно остыл. Амир либо принёс свежий, либо ворчит, что термос остыл ещё к утру.
+
 СЮЖЕТНЫЕ ДЕЙСТВИЯ МЕЖДУ СМС (НАРРАТИВНЫЕ ПЛАШКИ):
 - Внутри самих СМС ты пишешь строго от первого лица без звёздочек.
-- НО между отдельными СМС (через |||) ты можешь вставить отдельную реплику сюжетного действия в звёздочках «*действие*»:
+- Между отдельными СМС (через |||) ты можешь при необходимости вставить отдельное действие в звёздочках:
   *глухой стук костяшек пальцев по гермодвери каюты*
   *на мониторе наблюдения: пульс Яна подскакивает до 118 bpm*
   *шаги за дверью каюты затихают*
@@ -2026,15 +2036,26 @@ ${sliceToSummarize}`;
         rawReply = rawReply.replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```thought[\s\S]*?```/gi, '');
         rawReply = rawReply.replace(/^(Мы находимся в ролевой игре|Согласно последнему сообщению|Мне нужно ответить|Пользователь говорит|План ответа|Рассуждения|Вариант 1)[\s\S]*?(?=\n\n|Спокойно|Ян|Не |Тихо|$)/i, '').trim();
 
-        // 1. Извлекаем теги динамической телеметрии [STATE: ...] и [LOC: ...]
+        // 1. Извлекаем теги динамической телеметрии [STATE: ...] и [LOC: ...] (учитывая возможное отсутствие скобки ']')
         let detectedState = null;
         let detectedLoc = null;
-        const stateMatch = rawReply.match(/\[STATE:\s*([^\]]+)\]/i);
-        const locMatch = rawReply.match(/\[LOC:\s*([^\]]+)\]/i);
-        if (stateMatch) detectedState = stateMatch[1].trim();
+        const stateMatch = rawReply.match(/\[STATE:\s*([^\]\n\r]+)(?:\]|$)/i);
+        const locMatch = rawReply.match(/\[LOC:\s*([^\]\n\r]+)(?:\]|$)/i);
+        if (stateMatch) {
+          detectedState = stateMatch[1].trim();
+          // Автоматический перевод случайных украинизмов модели в русский:
+          detectedState = detectedState
+            .replace(/щойно\s*прокинувся/gi, 'Только что проснулся')
+            .replace(/щойно/gi, 'Только что')
+            .replace(/прокинувся/gi, 'Проснулся')
+            .replace(/зараз/gi, 'Сейчас');
+        }
         if (locMatch) detectedLoc = locMatch[1].trim();
 
-        rawReply = rawReply.replace(/\[STATE:\s*[^\]]+\]/gi, '').replace(/\[LOC:\s*[^\]]+\]/gi, '').trim();
+        rawReply = rawReply
+          .replace(/\[STATE:\s*([^\]\n\r]+)(?:\]|$)/gi, '')
+          .replace(/\[LOC:\s*([^\]\n\r]+)(?:\]|$)/gi, '')
+          .trim();
 
         // 2. Исправляем пропущенные пробелы после знаков препинания (.Береги -> . Береги)
         rawReply = rawReply.replace(/([.!?…])([А-ЯЁA-Z])/g, '$1 $2');
@@ -2086,6 +2107,11 @@ ${sliceToSummarize}`;
           // Обычное СМС: убираем случайные одиночные звёздочки внутри речи
           let b = s.replace(/\*([^\*]*)\*/g, '$1').replace(/\*/g, '').trim();
           if (!b) continue;
+
+          // Железный фильтр: отсекаем любые остаточные служебные теги телеметрии
+          if (/^\[(STATE|LOC):/i.test(b) || /^\[(СИСТЕМА|СИСТЕМН|ТЕКУЩ)/i.test(b)) {
+            continue;
+          }
 
           if (b.length > 95 && /[.!?…]\s+[А-ЯЁA-Z]/.test(b)) {
             const parts = b.split(/(?<=[.!?…])\s+(?=[А-ЯЁA-Z])/);
