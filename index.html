@@ -209,7 +209,7 @@
       display: inline-block;
     }
 
-    /* SUGGESTION BAR (Кубик 🎲) */
+    /* SUGGESTION BAR (Идеи ответа) */
     .suggestion-bar {
       background: #0b0f16;
       border-top: 1px solid var(--border);
@@ -628,7 +628,7 @@
         <button class="icon-btn" id="eventBtn" onclick="triggerRandomDayEvent()" title="Случайное событие в медблоке / на базе">✦ EVT</button>
         <button class="icon-btn" id="proactiveBtn" onclick="triggerProactive(false)" title="Запросить входящее СМС от Амира">SMS</button>
         <button class="icon-btn" id="noteBtn" onclick="openAuthorNoteModal()" title="Заметка сценариста (вброс ситуации)">NOTE</button>
-        <button class="icon-btn" id="scenarioBtn" onclick="openScenarioModal()" style="border-color: #38bdf8; color: #38bdf8;" title="Сценарии отношений и сюжетные ветки">🎭 СЮЖЕТ</button>
+        <button class="icon-btn" id="scenarioBtn" onclick="openScenarioModal()" style="border-color: #38bdf8; color: #38bdf8;" title="Сценарии отношений и сюжетные ветки">◈ СЮЖЕТ</button>
         <button class="icon-btn" onclick="openLorebook()" title="Книга мира и триггеры">LORE</button>
         <button class="icon-btn" onclick="openSettings()" title="Настройки канала и памяти">CFG</button>
       </div>
@@ -647,10 +647,10 @@
 
     <div class="chat" id="chatBox"></div>
 
-    <!-- ПАНЕЛЬ ПОДСКАЗОК РЕПЛИК ДЛЯ ЯНА (Кубик 🎲) -->
+    <!-- ПАНЕЛЬ ПОДСКАЗОК РЕПЛИК ДЛЯ ЯНА -->
     <div id="suggestionBar" class="suggestion-bar" style="display:none;">
       <div class="sugg-header">
-        <span>🎲 ИДЕИ ОТВЕТА ДЛЯ ЯНА:</span>
+        <span>◈ ИДЕИ ОТВЕТА ДЛЯ ЯНА:</span>
         <button class="sugg-close-btn" onclick="closeSuggestions()">✕</button>
       </div>
       <div id="suggestionChips" class="sugg-chips"></div>
@@ -658,7 +658,7 @@
 
     <div class="input-area">
       <textarea id="msgInput" rows="1" placeholder="Сообщение... (*действие* для заметки в чат)" oninput="handleMsgInput(this)" onkeydown="handleKey(event)"></textarea>
-      <button class="icon-btn" id="diceBtn" onclick="requestSuggestions()" title="Кубик: предложить 3 варианта ответа для Яна" style="height:42px; padding:0 10px; font-size:16px;">🎲</button>
+      <button class="icon-btn" id="diceBtn" onclick="requestSuggestions()" title="Идеи: предложить 3 варианта ответа для Яна" style="height:42px; padding:0 11px; font-size:14px; color:var(--accent);">◈</button>
       <button class="send-btn" id="sendBtn" onclick="sendMessage()">SEND</button>
     </div>
   </div>
@@ -679,7 +679,7 @@
       <!-- БЛОК РЕАЛЬНОГО GPS-ПЕЛЕНГАТОРА -->
       <div class="field" style="margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <label style="margin:0; font-weight:700; color:var(--accent); font-size:12px;">🛰️ GPS-ПЕЛЕНГАТОР ЯНА (РЕАЛЬНАЯ ГЕОЛОКАЦИЯ)</label>
+          <label style="margin:0; font-weight:700; color:var(--accent); font-size:12px;">GPS // ПЕЛЕНГАТОР ЯНА (ГЕОЛОКАЦИЯ)</label>
           <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; cursor:pointer;">
             <input type="checkbox" id="gpsToggle" onchange="toggleGPS(this.checked)" />
             ВКЛ. GPS
@@ -687,19 +687,19 @@
         </div>
         
         <div style="background:#090d14; border:1px solid #1f293d; border-radius:8px; padding:10px; font-size:11px; font-family:ui-monospace, monospace;">
-          <div id="gpsCurrentCoords" style="color:#94a3b8; margin-bottom:5px;">📡 Статус: GPS не запущен</div>
-          <div id="gpsCurrentZone" style="color:#38bdf8; font-weight:600; margin-bottom:8px;">📍 Определённый сектор: —</div>
+          <div id="gpsCurrentCoords" style="color:#94a3b8; margin-bottom:5px;">СТАТУС // GPS не запущен</div>
+          <div id="gpsCurrentZone" style="color:#38bdf8; font-weight:600; margin-bottom:8px;">СЕКТОР // —</div>
           
           <div style="display:flex; flex-direction:column; gap:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; background:#121a28; padding:5px 8px; border-radius:6px;">
-              <span id="gpsHomeLabel" style="font-size:11px;">🏠 ДОМ: не задан</span>
+              <span id="gpsHomeLabel" style="font-size:11px;">ДОМ // не задан</span>
               <div style="display:flex; gap:4px;">
                 <button type="button" class="btn-sec" style="padding:3px 8px; font-size:10px;" onclick="saveCurrentCoordsAs('home')">Запомнить здесь</button>
                 <button type="button" class="btn-sec" style="padding:3px 6px; font-size:10px; color:#ef4444;" onclick="clearCoord('home')" title="Сбросить координаты Дома">✕</button>
               </div>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; background:#121a28; padding:5px 8px; border-radius:6px;">
-              <span id="gpsWorkLabel" style="font-size:11px;">🏥 РАБОТА: не задан</span>
+              <span id="gpsWorkLabel" style="font-size:11px;">РАБОТА // не задан</span>
               <div style="display:flex; gap:4px;">
                 <button type="button" class="btn-sec" style="padding:3px 8px; font-size:10px;" onclick="saveCurrentCoordsAs('work')">Запомнить здесь</button>
                 <button type="button" class="btn-sec" style="padding:3px 6px; font-size:10px; color:#ef4444;" onclick="clearCoord('work')" title="Сбросить координаты Работы">✕</button>
@@ -717,8 +717,8 @@
 
       <!-- БЫСТРЫЕ ТРИГГЕРЫ ТЕЛЕМЕТРИИ -->
       <div style="margin-top:4px; border-top:1px solid var(--border); padding-top:10px; display:flex; gap:8px;">
-        <button type="button" class="btn-sec" style="flex:1; font-size:11px; padding:7px 8px;" onclick="closeModal('quickStatusModal'); triggerSensorPing();" title="Послать сигнал тревоги/скачка пульса">📡 Скачок пульса (SENS)</button>
-        <button type="button" class="btn-sec" style="flex:1; font-size:11px; padding:7px 8px;" onclick="closeModal('quickStatusModal'); forceAbsenceCatchUp();" title="Смоделировать 15 часов отсутствия">⏳ Симуляция 15ч (PING)</button>
+        <button type="button" class="btn-sec" style="flex:1; font-size:11px; padding:7px 8px;" onclick="closeModal('quickStatusModal'); triggerSensorPing();" title="Послать сигнал тревоги/скачка пульса">[!] Скачок пульса (SENS)</button>
+        <button type="button" class="btn-sec" style="flex:1; font-size:11px; padding:7px 8px;" onclick="closeModal('quickStatusModal'); forceAbsenceCatchUp();" title="Смоделировать 15 часов отсутствия">[//] Симуляция 15ч (PING)</button>
       </div>
 
       <div class="modal-actions" style="margin-top:10px;">
@@ -762,7 +762,7 @@
 
       <div style="background:#0c1929; border:1px solid #0284c7; border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <div style="font-size:12px; font-weight:700; color:#38bdf8;">🎭 Сценарии отношений и сюжетные ветки</div>
+          <div style="font-size:12px; font-weight:700; color:#38bdf8;">◈ Сценарии отношений и сюжетные ветки</div>
           <div style="font-size:10.5px; color:#94a3b8;">Слоуберн (39/19), Слоуберн без барьеров, Фастберн, Секстинг пары</div>
         </div>
         <button type="button" class="btn-sec" onclick="closeModal('loreModal'); openScenarioModal();" style="border-color:#38bdf8; color:#38bdf8; padding:5px 9px; font-size:11px; font-weight:700;">ВЫБРАТЬ</button>
@@ -817,7 +817,7 @@
 
       <div style="background:#0c1929; border:1px solid #0284c7; border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
         <div>
-          <div style="font-size:12px; font-weight:700; color:#38bdf8;">🎭 Ветка: <span id="currentScenarioName" style="color:#fff;">Слоуберн (39 vs 19)</span></div>
+          <div style="font-size:12px; font-weight:700; color:#38bdf8;">◈ Ветка: <span id="currentScenarioName" style="color:#fff;">Слоуберн (39 vs 19)</span></div>
           <div style="font-size:10.5px; color:#94a3b8;">Смена сценариев отношений и авто-бэкап</div>
         </div>
         <button type="button" class="btn-sec" onclick="closeModal('settingsModal'); openScenarioModal();" style="border-color:#38bdf8; color:#38bdf8; padding:5px 9px; font-size:11px; font-weight:700;">СМЕНИТЬ</button>
@@ -892,7 +892,7 @@
         <label>Быстрый выбор модели (Пресеты)</label>
         <select id="modelPresetSelect" onchange="applyModelPreset()">
           <option value="">-- Выбрать пресет --</option>
-          <option value="openrouter|deepseek/deepseek-chat">★ OpenRouter: DeepSeek V3 (Рекомендуется! Умнейшая, копейки)</option>
+          <option value="openrouter|deepseek/deepseek-chat">[REC] OpenRouter: DeepSeek V3 (Умная, рекомендуемая)</option>
           <option value="openrouter|google/gemini-2.0-flash-exp:free">OpenRouter: Gemini 2.0 Flash (Бесплатная, быстрая)</option>
           <option value="openrouter|meta-llama/llama-3.3-70b-instruct:free">OpenRouter: Llama 3.3 70B (Бесплатная, сильная логика)</option>
           <option value="openrouter|deepseek/deepseek-r1:free">OpenRouter: DeepSeek R1 (Бесплатная рассуждающая)</option>
@@ -940,10 +940,10 @@
 
       <div class="field">
         <div class="row-btns">
-          <button class="btn-sec" onclick="exportChat()">💾 Экспорт JSON</button>
-          <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Импорт JSON</button>
+          <button class="btn-sec" onclick="exportChat()">[↓] Экспорт JSON</button>
+          <button class="btn-sec" onclick="document.getElementById('importFile').click()">[↑] Импорт JSON</button>
           <input type="file" id="importFile" accept=".json" style="display:none" onchange="importChat(event)" />
-          <button class="btn-sec" style="background:#1e1b4b; color:#a5b4fc; border-color:#4338ca;" onclick="archiveAndStartNewChat()" title="Автоматически скачает бэкап текущего чата в JSON и начнёт новую главу">📦 Сохранить и начать новый чат</button>
+          <button class="btn-sec" style="background:#1e1b4b; color:#a5b4fc; border-color:#4338ca;" onclick="archiveAndStartNewChat()" title="Автоматически скачает бэкап текущего чата в JSON и начнёт новую главу">[+] Сохранить и новый чат</button>
         </div>
       </div>
 
@@ -1147,7 +1147,7 @@
         id: "slowburn_age",
         title: "1. Слоуберн // Возрастной барьер (39 vs 19)",
         badge: "Слоуберн 39/19",
-        icon: "🕰️",
+        icon: "◈",
         description: "Амир (39) осознанно держит дистанцию от Яна (19). Считает себя пожившим, циничным шпионом с кровью на руках, а Яна — юным мальчиком с ПРЛ. Амир боится сломать его или воспользоваться слабостью. Но под маской наставника — щемящая ревность, круглосуточный надзор и глубокая нежность. Через сопротивление Амира они постепенно сходятся.",
         defaultLocation: "База Протокола • Медблок",
         defaultState: "Не спал 28ч • Пульс 86 bpm",
@@ -1173,7 +1173,7 @@
         id: "slowburn_mutual",
         title: "2. Слоуберн // Взаимное притяжение (Без барьеров)",
         badge: "Тёплый слоуберн",
-        icon: "☕",
+        icon: "◈",
         description: "Разница в возрасте никого не отталкивает. Оба чувствуют сильное взаимное притяжение и знают об этом, но не торопят события. Мягкая забота, чай с кедровыми орехами, прикосновения к пальцам, долгие взгляды сквозь маску и бережные шаги к первому признанию.",
         defaultLocation: "База Протокола • Медблок",
         defaultState: "Пульс 74 bpm • Спокоен",
@@ -1199,7 +1199,7 @@
         id: "fastburn_spark",
         title: "3. Фастберн // Игривая искра (Шаг до отношений)",
         badge: "Фастберн / Флирт",
-        icon: "⚡",
+        icon: "◈",
         description: "Они уже провели ночь вместе в одной каюте или пережили горячую совместную миссию. Барьеры рухнули! Между ними летают искры: откровенный флирт, взаимные дразнилки, прикосновения к талии и шее, подколы за зашкаливающий пульс и румянец. К статусу пары всё мчится на полной скорости.",
         defaultLocation: "База Протокола • Жилой сектор (Каюта)",
         defaultState: "Пульс 108 bpm • Взволнован / Румянец",
@@ -1225,7 +1225,7 @@
         id: "established_sexting",
         title: "4. Уже пара // Вечерний секстинг на расстоянии",
         badge: "Пара / 18+ Секстинг",
-        icon: "🔥",
+        icon: "◈",
         description: "Амир и Ян — устоявшаяся пара. Поздняя ночь, они разделены по разным комнатам или базам (Ян в постели в каюте, Амир заперся в серверной). Чувственная, откровенная переписка по защищённому каналу VP-NET: реакция на пульс, дразнящие команды, ласки на расстоянии и фантазии о скорой встрече в постели.",
         defaultLocation: "База Протокола • Жилой сектор (Каюта Яна)",
         defaultState: "В постели под одеялом • Пульс 98 bpm",
@@ -1253,7 +1253,7 @@
         id: "custom_free",
         title: "5. Свободный сюжет // Своя история",
         badge: "Свободный режим",
-        icon: "🎲",
+        icon: "◈",
         description: "Чистый холст. Никаких предустановленных рамок отношений — развивай сюжет сам через свои реплики, заметки сценариста (NOTE) или поле вектора сюжета в настройках.",
         defaultLocation: "База Протокола • Медблок",
         defaultState: "Пульс 76 bpm • В норме",
@@ -1413,7 +1413,7 @@
       const pinnedCount = history ? history.filter(m => m.pinned).length : 0;
       const ctxEl = document.getElementById("contextDisplay");
       if (ctxEl) {
-        ctxEl.textContent = `CTX // ${Math.min(total, ctxLimit)}/${ctxLimit}${pinnedCount > 0 ? ` (📌 ${pinnedCount})` : ''}`;
+        ctxEl.textContent = `CTX // ${Math.min(total, ctxLimit)}/${ctxLimit}${pinnedCount > 0 ? ` (◈ ${pinnedCount})` : ''}`;
       }
     }
 
@@ -1510,7 +1510,7 @@
           if (m.role === "assistant" && !m.isSensor) {
             const regenBtn = document.createElement("button");
             regenBtn.className = "inline-act-btn regen";
-            regenBtn.innerHTML = "🔄 Заново";
+            regenBtn.innerHTML = "⟳ Заново";
             regenBtn.title = "Сгенерировать другой вариант этого сообщения";
             regenBtn.onclick = () => regenInlineEdit(idx);
             acts.appendChild(regenBtn);
@@ -1543,7 +1543,7 @@
         // ОБЫЧНОЕ ОТОБРАЖЕНИЕ СООБЩЕНИЯ
         const div = document.createElement("div");
         div.className = "msg" + (m.isSensor ? " sensor-alert" : "");
-        const pinBadgeHtml = m.pinned ? '<span class="pin-badge">📌 ПАМЯТЬ</span>' : '';
+        const pinBadgeHtml = m.pinned ? '<span class="pin-badge">◈ ПАМЯТЬ</span>' : '';
         div.innerHTML = `${formatMessageContent(m.content)}<div class="time">${pinBadgeHtml} ${m.time || ""}</div>`;
         row.appendChild(div);
 
@@ -1607,33 +1607,33 @@
 
           const editBtn = document.createElement("button");
           editBtn.className = "dropdown-item";
-          editBtn.innerHTML = "<span>✏️</span> Редактировать";
+          editBtn.innerHTML = "<span>✎</span> Редактировать";
           editBtn.onclick = () => { activeMenuIndex = null; editMessage(idx); };
           dropdown.appendChild(editBtn);
 
           if (m.role === "assistant" && !m.isSensor) {
             const newVarBtn = document.createElement("button");
             newVarBtn.className = "dropdown-item";
-            newVarBtn.innerHTML = "<span>🔄</span> Новый вариант (+1)";
+            newVarBtn.innerHTML = "<span>⟳</span> Новый вариант (+1)";
             newVarBtn.onclick = () => { activeMenuIndex = null; nextVariant(idx); };
             dropdown.appendChild(newVarBtn);
           }
 
           const pinBtn = document.createElement("button");
           pinBtn.className = "dropdown-item";
-          pinBtn.innerHTML = `<span>📌</span> ${m.pinned ? "Открепить" : "Закрепить в памяти"}`;
+          pinBtn.innerHTML = `<span>◈</span> ${m.pinned ? "Открепить" : "Закрепить в памяти"}`;
           pinBtn.onclick = () => { activeMenuIndex = null; togglePinMessage(idx); };
           dropdown.appendChild(pinBtn);
 
           const copyBtn = document.createElement("button");
           copyBtn.className = "dropdown-item";
-          copyBtn.innerHTML = "<span>📋</span> Скопировать";
+          copyBtn.innerHTML = "<span>⎘</span> Скопировать";
           copyBtn.onclick = () => { activeMenuIndex = null; copyMessage(idx); };
           dropdown.appendChild(copyBtn);
 
           const delBtn = document.createElement("button");
           delBtn.className = "dropdown-item danger";
-          delBtn.innerHTML = "<span>🗑️</span> Удалить";
+          delBtn.innerHTML = "<span>✕</span> Удалить";
           delBtn.onclick = () => { activeMenuIndex = null; deleteMessage(idx); };
           dropdown.appendChild(delBtn);
 
@@ -1999,7 +1999,7 @@ ${lastMsgs}
       const bar = document.getElementById("suggestionBar");
       const wrap = document.getElementById("suggestionChips");
       wrap.innerHTML = "";
-      const icons = ["🔥 ", "⚡ ", "💭 "];
+      const icons = ["▸ ", "▸ ", "▸ "];
       list.forEach((text, i) => {
         const chip = document.createElement("button");
         chip.className = "sugg-chip";
@@ -2123,14 +2123,14 @@ ${lastMsgs}
       const loc = (locStr || config.location || "").toLowerCase();
       let presenceNote = "";
       if (isCoPresent) {
-        presenceNote = `\n⚠️ РЕЖИМ ФИЗИЧЕСКОГО ПРИСУТСТВИЯ (АМИР И ЯН В ОДНОЙ КОМНАТЕ):
+        presenceNote = `\n[!] РЕЖИМ ФИЗИЧЕСКОГО ПРИСУТСТВИЯ (АМИР И ЯН В ОДНОЙ КОМНАТЕ):
 - Амир СЕЙЧАС ЛИЧНО НАХОДИТСЯ В ПОМЕЩЕНИИ РЯДОМ С ЯНОМ (сидит на стуле у кушетки / стоит рядом в комнате)!
 - Амир видит Яна НАПРЯМУЮ СВОИМИ ГЛАЗАМИ во плоти, а НЕ через камеры наблюдения!
 - КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО писать в действиях: «смотрит в камеру», «смотрит на монитор наблюдения», «взгляд сквозь объектив»! Амир смотрит прямо на Яна, на его лицо, на его пальцы, в его глаза!
 - КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО говорить: «я приду через полчаса», «жди меня», «сейчас дойду» — АМИР УЖЕ ЗДЕСЬ, ОН СИДИТ РЯДОМ!
 - Действия Амира в комнате: сидит на стуле, подаёт стакан, тихо усмехается, поправляет плед, смотрит на порезы/швы Яна, слегка наклоняет голову, скрещивает руки на груди.`;
       } else {
-        presenceNote = `\n📡 ДИСТАНЦИОННЫЙ РЕЖИМ (АМИР В СЕРВЕРНОЙ / ЗА ТЕРМИНАЛОМ):
+        presenceNote = `\n[//] ДИСТАНЦИОННЫЙ РЕЖИМ (АМИР В СЕРВЕРНОЙ / ЗА ТЕРМИНАЛОМ):
 - Ян в помещении один, Амир наблюдает удалённо через камеры базы, мониторы и биосенсоры.
 - Переписка идёт через защищённый мессенджер VP-NET.`;
       }
@@ -3195,7 +3195,7 @@ ${sliceToSummarize}`;
         return;
       }
       const statusEl = document.getElementById("gpsCurrentCoords");
-      if (statusEl) statusEl.textContent = "📡 Запрос координат GPS...";
+      if (statusEl) statusEl.textContent = "[//] Запрос координат GPS...";
 
       navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, {
         enableHighAccuracy: true,
@@ -3217,9 +3217,9 @@ ${sliceToSummarize}`;
         gpsWatchId = null;
       }
       const statusEl = document.getElementById("gpsCurrentCoords");
-      if (statusEl) statusEl.textContent = "📡 GPS отключен";
+      if (statusEl) statusEl.textContent = "[//] GPS отключен";
       const zoneEl = document.getElementById("gpsCurrentZone");
-      if (zoneEl) zoneEl.textContent = "📍 Определённый сектор: ручной режим";
+      if (zoneEl) zoneEl.textContent = "СЕКТОР // Ручной режим";
     }
 
     function getDistanceMeters(lat1, lon1, lat2, lon2) {
@@ -3241,7 +3241,7 @@ ${sliceToSummarize}`;
 
       const coordsEl = document.getElementById("gpsCurrentCoords");
       if (coordsEl) {
-        coordsEl.textContent = `📡 Координаты: ${lat.toFixed(4)}, ${lon.toFixed(4)} (±${acc}м)`;
+        coordsEl.textContent = `КООРДИНАТЫ // ${lat.toFixed(4)}, ${lon.toFixed(4)} (±${acc}м)`;
       }
 
       evaluateLocationZone(lat, lon);
@@ -3250,7 +3250,7 @@ ${sliceToSummarize}`;
     function onGpsError(err) {
       const coordsEl = document.getElementById("gpsCurrentCoords");
       if (coordsEl) {
-        coordsEl.textContent = `⚠️ Ошибка GPS: ${err.message || "Нет доступа к геопозиции"}`;
+        coordsEl.textContent = `[!] Ошибка GPS: ${err.message || "Нет доступа к геопозиции"}`;
       }
     }
 
@@ -3274,7 +3274,7 @@ ${sliceToSummarize}`;
       }
 
       const zoneEl = document.getElementById("gpsCurrentZone");
-      if (zoneEl) zoneEl.textContent = `📍 Определённый сектор: ${matchedSector}`;
+      if (zoneEl) zoneEl.textContent = `СЕКТОР // ${matchedSector}`;
 
       if (config.location !== matchedSector) {
         config.location = matchedSector;
@@ -3335,10 +3335,10 @@ ${sliceToSummarize}`;
       const homeLbl = document.getElementById("gpsHomeLabel");
       const workLbl = document.getElementById("gpsWorkLabel");
       if (homeLbl) {
-        homeLbl.textContent = config.homeCoords ? `🏠 ДОМ: ${config.homeCoords.lat.toFixed(4)}, ${config.homeCoords.lon.toFixed(4)}` : "🏠 ДОМ: не задан";
+        homeLbl.textContent = config.homeCoords ? `ДОМ // ${config.homeCoords.lat.toFixed(4)}, ${config.homeCoords.lon.toFixed(4)}` : "ДОМ // не задан";
       }
       if (workLbl) {
-        workLbl.textContent = config.workCoords ? `🏥 РАБОТА: ${config.workCoords.lat.toFixed(4)}, ${config.workCoords.lon.toFixed(4)}` : "🏥 РАБОТА: не задан";
+        workLbl.textContent = config.workCoords ? `РАБОТА // ${config.workCoords.lat.toFixed(4)}, ${config.workCoords.lon.toFixed(4)}` : "РАБОТА // не задан";
       }
       const toggle = document.getElementById("gpsToggle");
       if (toggle) toggle.checked = !!config.gpsEnabled;
@@ -3373,15 +3373,15 @@ ${sliceToSummarize}`;
           </div>
           <div class="scenario-desc">${escapeHtml(scn.description)}</div>
           <div class="scenario-meta">
-            <span>📍 ${escapeHtml(scn.defaultLocation)}</span>
-            <span>💓 ${escapeHtml(scn.defaultState)}</span>
+            <span>LOC // ${escapeHtml(scn.defaultLocation)}</span>
+            <span>STATE // ${escapeHtml(scn.defaultState)}</span>
           </div>
           <div class="scenario-actions">
             ${isActive 
-              ? `<button class="btn-sec" style="font-size:11px; padding:6px 12px; color:#38bdf8; border-color:#38bdf8;" onclick="switchScenario('${key}', true)">🔄 Начать заново (с авто-бэкапом)</button>`
+              ? `<button class="btn-sec" style="font-size:11px; padding:6px 12px; color:#38bdf8; border-color:#38bdf8;" onclick="switchScenario('${key}', true)">⟳ Начать заново (с авто-бэкапом)</button>`
               : `
                 <button class="btn-sec" style="font-size:11px; padding:6px 10px;" onclick="applyScenarioToCurrentChat('${key}')" title="Сменить характер и вектор отношений, но продолжить текущую переписку">Переключить без сброса</button>
-                <button class="send-btn" style="font-size:11px; padding:6px 14px;" onclick="switchScenario('${key}', true)">▶ Начать сюжет (новый чат)</button>
+                <button class="send-btn" style="font-size:11px; padding:6px 14px;" onclick="switchScenario('${key}', true)">▸ Начать сюжет (новый чат)</button>
               `
             }
           </div>
@@ -3505,7 +3505,7 @@ ${sliceToSummarize}`;
 
       const errDiv = document.createElement("div");
       errDiv.className = "system-tag error-tag";
-      errDiv.innerHTML = `⚠️ СБОЙ СВЯЗИ: ${escapeHtml(errMsg)} <button class="err-act-btn" onclick="openSettings()">[CFG]</button> <button class="err-act-btn" onclick="retryLastAction()">[RETRY]</button>`;
+      errDiv.innerHTML = `[!] СБОЙ СВЯЗИ: ${escapeHtml(errMsg)} <button class="err-act-btn" onclick="openSettings()">[CFG]</button> <button class="err-act-btn" onclick="retryLastAction()">[RETRY]</button>`;
       box.appendChild(errDiv);
       box.scrollTop = box.scrollHeight;
     }
